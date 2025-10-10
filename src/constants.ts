@@ -1,10 +1,10 @@
 // Constantes do jogo
 export const GAME_CONFIG = {
   HEADER_HEIGHT: 60,
-  TPOSE_REQUIRED_TIME: 5000, // ms
+  TPOSE_REQUIRED_TIME: 500, // Reduced from 1000ms to 500ms
   TPOSE_DETECTION_THRESHOLDS: {
-    Y_TOLERANCE: 0.08,
-    X_MIN_DISTANCE: 0.2
+    Y_TOLERANCE: 0.15, // Increased from 0.08 to be more lenient
+    X_MIN_DISTANCE: 0.15 // Decreased from 0.2 to be more accessible
   },
   HAND_POSITION_SCALE: {
     X: 8,

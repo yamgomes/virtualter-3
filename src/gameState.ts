@@ -2,6 +2,8 @@
 export const GameplayState = {
   WaitingToStart: 0,
   Playing: 1,
+  GoalActive: 2,
+  GoalCompleted: 3,
 } as const;
 
 export type GameplayStateType = typeof GameplayState[keyof typeof GameplayState];
@@ -12,6 +14,7 @@ export class GameStateManager {
 
   constructor() {
     this.gameHeader = document.getElementById("game-header");
+    this.updateHeader()
   }
 
   get currentState(): GameplayStateType {
@@ -28,10 +31,16 @@ export class GameStateManager {
 
     switch (this._currentState) {
       case GameplayState.WaitingToStart:
-        this.gameHeader.innerText = "Virtualter 3 - Estado: Esperando iniciar";
+        this.gameHeader.innerText = "Virtualter 3 - Esperando iniciar";
         break;
       case GameplayState.Playing:
-        this.gameHeader.innerText = "Virtualter 3 - Estado: Jogando";
+        this.gameHeader.innerText = "Virtualter 3 - Jogando";
+        break;
+      case GameplayState.GoalActive:
+        this.gameHeader.innerText = "Virtualter 3 - Posicione seus braços!";
+        break;
+      case GameplayState.GoalCompleted:
+        this.gameHeader.innerText = "Virtualter 3 - Meta concluída!";
         break;
       default:
         this.gameHeader.innerText = "Virtualter 3";
@@ -45,5 +54,13 @@ export class GameStateManager {
 
   isPlaying(): boolean {
     return this._currentState === GameplayState.Playing;
+  }
+
+  isGoalActive(): boolean {
+    return this._currentState === GameplayState.GoalActive;
+  }
+
+  isGoalCompleted(): boolean {
+    return this._currentState === GameplayState.GoalCompleted;
   }
 }

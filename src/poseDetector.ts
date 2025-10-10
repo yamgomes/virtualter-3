@@ -51,6 +51,11 @@ export class PoseDetector {
       return null;
     }
 
+    // Check if video has a stream (camera is enabled)
+    if (!this.video.srcObject) {
+      return null;
+    }
+
     this.prepareMirroredVideo();
     return await this.poseLandmarker.detectForVideo(this.mirrorCanvas, performance.now());
   }
