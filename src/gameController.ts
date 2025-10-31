@@ -3,6 +3,9 @@ import { UIManager } from "./uiManager";
 import { SceneManager } from "./sceneManager";
 import { PoseDetector } from "./poseDetector";
 import { VideoManager } from "./videoManager";
+import { GameModeManager } from "./gameModeManager";
+import { GameSelectionUI } from "./gameSelectionUI";
+import type { GameMode } from "./gameMode";
 import { GAME_CONFIG } from "./constants";
 
 export class GameController {
@@ -11,10 +14,14 @@ export class GameController {
   private scene: SceneManager;
   private poseDetector: PoseDetector;
   private video: VideoManager;
+  private gameModeManager: GameModeManager;
+  private gameSelectionUI!: GameSelectionUI;
+  private currentGameMode: GameMode | null = null;
 
   private tPoseStartTime: number | null = null;
   private goalStartTime: number | null = null;
   private goalCompletedTime: number | null = null;
+  private currentGoal: any = null;
 
   constructor() {
     this.gameState = new GameStateManager();
@@ -22,6 +29,7 @@ export class GameController {
     this.video = new VideoManager();
     this.scene = new SceneManager();
     this.poseDetector = new PoseDetector(this.video.video);
+    this.gameModeManager = GameModeManager.getInstance();
 
     this.initialize();
   }
@@ -30,14 +38,37 @@ export class GameController {
     await this.poseDetector.initialize();
     this.scene.setupVideoBackground(this.video.video);
 
-    // Setup goal callbacks
-    this.scene.setGoalCallbacks(
-      (goal) => this.onGoalReached(goal),
-      () => this.onGoalCompleted()
-    );
+    // Cria a UI de seleção após os elementos estarem prontos
+    this.gameSelectionUI = new GameSelectionUI();
+
+    // Setup UI callbacks
+    this.gameSelectionUI.setOnGameSelected((gameMode) => this.onGameModeSelected(gameMode));
+
+    // Show game selection screen
+    this.gameSelectionUI.show();
 
     this.startGameLoop();
     this.startRenderLoop();
+  }
+
+  private onGameModeSelected(gameModeName: string): void {
+    console.log(`Modo de jogo selecionado: ${gameModeName}`);
+
+    // Cria instância do modo de jogo
+    this.currentGameMode = this.gameModeManager.createGameMode(gameModeName);
+
+    if (!this.currentGameMode) {
+      console.error(`Falha ao criar modo de jogo: ${gameModeName}`);
+      return;
+    }
+
+    // Inicializa o modo de jogo com a cena
+    this.currentGameMode.initialize(this.scene.scene);
+
+    // Esconde a UI de seleção e mostra o jogo
+    this.gameSelectionUI.hide();
+
+    console.log(`Modo de jogo ${gameModeName} inicializado com sucesso`);
   }
 
   private startGameLoop(): void {
@@ -56,6 +87,11 @@ export class GameController {
   }
 
   private handlePoseDetection(landmarks: any[]): void {
+    // Se não há modo de jogo selecionado, não faz nada
+    if (!this.currentGameMode) {
+      return;
+    }
+
     const tPose = PoseDetector.detectTPose(landmarks);
 
     if (this.gameState.isWaitingToStart()) {
@@ -65,12 +101,11 @@ export class GameController {
     } else if (this.gameState.isGoalActive()) {
       this.handleGoalState(landmarks);
     } else if (this.gameState.isGoalCompleted()) {
-      // Don't update pose during completed state to avoid lag
       this.handleGoalCompletedState();
-      return; // Skip pose update
+      return;
     }
 
-    // Update the character pose only if not in completed state
+    // Update the character pose
     this.scene.updatePose(landmarks);
   }
 
@@ -78,7 +113,7 @@ export class GameController {
     if (tPose) {
       if (!this.tPoseStartTime) {
         this.tPoseStartTime = performance.now();
-        this.ui.showTPoseBar(); // Show progress bar when T-pose starts
+        this.ui.showTPoseBar();
       }
 
       const elapsed = performance.now() - this.tPoseStartTime;
@@ -95,6 +130,8 @@ export class GameController {
   }
 
   private handlePlayingState(landmarks: any[]): void {
+    if (!this.currentGameMode) return;
+
     this.scene.updatePose(landmarks);
 
     // Start a new goal after a short delay
@@ -102,54 +139,57 @@ export class GameController {
       this.goalStartTime = performance.now();
     }
 
-    if (performance.now() - this.goalStartTime > 1000) { // Reduced from 2000 to 1000ms
+    const config = this.currentGameMode.getGameConfig();
+    if (performance.now() - this.goalStartTime > config.goalDelayTime) {
       this.startGoal();
     }
   }
 
   private handleGoalState(landmarks: any[]): void {
+    if (!this.currentGameMode || !this.currentGoal) return;
+
     this.scene.updatePose(landmarks);
 
-    // Check if player matches the goal
-    if (this.scene.checkPlayerGoal(landmarks)) {
+    // Check if player achieved the goal using the current game mode
+    if (this.currentGameMode.checkGoalAchieved(landmarks, this.currentGoal)) {
       this.completeGoal();
     }
   }
 
   private handleGoalCompletedState(): void {
-    // Update pose even in completed state to keep character moving
-    this.scene.updatePose([]);
+    if (!this.currentGameMode) return;
 
-    // Wait a moment then start a new goal using time-based approach
+    // Wait a moment then start a new goal
     if (!this.goalCompletedTime) {
       this.goalCompletedTime = performance.now();
     }
 
-    if (performance.now() - this.goalCompletedTime > 800) { // Reduced to 800ms for faster cycling
+    const config = this.currentGameMode.getGameConfig();
+    if (performance.now() - this.goalCompletedTime > config.goalCompletedDelay) {
       this.startGoal();
       this.goalCompletedTime = null;
     }
   }
 
   private startGoal(): void {
+    if (!this.currentGameMode) return;
+
+    // Create new goal using current game mode
+    this.currentGoal = this.currentGameMode.createGoal();
+
+    // Update goal visualization
+    this.currentGameMode.updateGoalVisualization(this.currentGoal);
+
     this.gameState.setState(GameplayState.GoalActive);
-    this.scene.startNewGoal();
     this.goalStartTime = null;
+
+    console.log('New goal started:', this.currentGoal);
   }
 
   private completeGoal(): void {
-    this.gameState.setState(GameplayState.GoalCompleted);
-    this.scene.completeGoal();
-  }
-
-  private onGoalReached(goal: any): void {
-    console.log('Goal reached! Target angles:', goal);
-    // Balls have reached center, player should position arms now
-  }
-
-  private onGoalCompleted(): void {
     console.log('Goal completed successfully!');
-    // Goal was completed, ready for next one
+    this.gameState.setState(GameplayState.GoalCompleted);
+    this.currentGoal = null;
   }
 
   private startGame(): void {
@@ -157,18 +197,23 @@ export class GameController {
     this.ui.hideStartMessage();
     this.ui.hideTPoseBar();
     this.scene.showCharacter();
-    this.scene.hideVideoBackground(); // Hide webcam feed when playing
+    this.scene.hideVideoBackground();
     this.resetTPoseProgress();
   }
 
   private resetTPoseProgress(): void {
     this.ui.resetTPoseProgress();
-    this.ui.hideTPoseBar(); // Hide progress bar when resetting
+    this.ui.hideTPoseBar();
     this.tPoseStartTime = null;
   }
 
   private startRenderLoop(): void {
     const render = () => {
+      // Update game mode animations if available
+      if (this.currentGameMode && typeof (this.currentGameMode as any).updateGoalAnimation === 'function') {
+        (this.currentGameMode as any).updateGoalAnimation();
+      }
+
       this.scene.render();
       requestAnimationFrame(render);
     };
