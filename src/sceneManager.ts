@@ -38,7 +38,7 @@ export class SceneManager {
     this.renderer.domElement.style.left = "0";
     this.renderer.domElement.style.zIndex = "1";
     document.body.appendChild(this.renderer.domElement);
-    this.camera.position.z = 5;
+    this.camera.position.z = 10;
   }
 
   private createSkybox(): void {
