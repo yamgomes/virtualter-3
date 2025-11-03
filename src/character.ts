@@ -211,13 +211,26 @@ export class Character {
         const midPoint = new THREE.Vector3().addVectors(startPos, endPos).multiplyScalar(0.5);
         this.bones[boneIndex].position.copy(midPoint);
 
+        // Calculate direction vector
+        const direction = new THREE.Vector3().subVectors(endPos, startPos);
+        const distance = direction.length();
+
         // Scale bone to distance between points
-        const distance = startPos.distanceTo(endPos);
         this.bones[boneIndex].scale.y = distance;
 
-        // Orient bone towards end position
-        this.bones[boneIndex].lookAt(endPos);
-        this.bones[boneIndex].rotateX(Math.PI / 2); // Correct orientation for cylinder
+        // Reset rotation before applying new orientation
+        this.bones[boneIndex].rotation.set(0, 0, 0);
+
+        // Align bone with direction vector
+        // Cylinder's default orientation is along Y-axis, so we need to align Y-axis with direction
+        if (distance > 0) {
+          direction.normalize();
+
+          // Create a quaternion that rotates from Y-axis to the direction vector
+          const up = new THREE.Vector3(0, 1, 0);
+          const quaternion = new THREE.Quaternion().setFromUnitVectors(up, direction);
+          this.bones[boneIndex].setRotationFromQuaternion(quaternion);
+        }
       }
     });
   }
@@ -242,9 +255,9 @@ export class Character {
 
   private landmarkToWorldPosition(landmark: any): THREE.Vector3 {
     return new THREE.Vector3(
-      (landmark.x - 0.5) * this.config.scale.x,
-      -(landmark.y - 0.5) * this.config.scale.y,
-      landmark.z ? landmark.z * this.config.scale.z : 0
+      (landmark.x - 0.5) * this.config.scale.x + this.position.x,
+      -(landmark.y - 0.5) * this.config.scale.y + this.position.y,
+      (landmark.z ? landmark.z * this.config.scale.z : 0) + this.position.z
     );
   }
 
