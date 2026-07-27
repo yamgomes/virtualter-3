@@ -1,10 +1,11 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <title>Virtualter 3</title>
+    <title>Nome Temporário</title>
     <style>
-      html, body {
+      html,
+      body {
         margin: 0;
         padding: 0;
         overflow: hidden;
@@ -13,7 +14,8 @@
       }
       canvas {
         position: absolute;
-        top: 0; left: 0;
+        top: 0;
+        left: 0;
       }
 
       /* Game Selection Screen */
@@ -40,7 +42,7 @@
       .selection-header h1 {
         font-size: 3em;
         margin: 0 0 10px 0;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
       }
 
       .selection-header p {
@@ -72,11 +74,11 @@
         transform: translateY(-5px);
         background: rgba(255, 255, 255, 0.2);
         border-color: rgba(255, 255, 255, 0.3);
-        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
       }
 
       .game-card.selected {
-        border-color: #4CAF50;
+        border-color: #4caf50;
         background: rgba(76, 175, 80, 0.2);
       }
 
@@ -112,12 +114,18 @@
         font-weight: bold;
       }
 
-      .difficulty-easy { color: #4CAF50; }
-      .difficulty-medium { color: #FF9800; }
-      .difficulty-hard { color: #F44336; }
+      .difficulty-easy {
+        color: #4caf50;
+      }
+      .difficulty-medium {
+        color: #ff9800;
+      }
+      .difficulty-hard {
+        color: #f44336;
+      }
 
       .start-button {
-        background: linear-gradient(45deg, #4CAF50, #45a049);
+        background: linear-gradient(45deg, #4caf50, #45a049);
         color: white;
         border: none;
         padding: 15px 40px;
@@ -152,7 +160,7 @@
     <!-- Game Selection Screen -->
     <div id="game-selection">
       <div class="selection-header">
-        <h1>Virtualter 3</h1>
+        <h1>Nome Temporário</h1>
         <p>Escolha um jogo para começar sua sessão de exercícios</p>
       </div>
 
@@ -166,8 +174,27 @@
     </div>
 
     <!-- Game Header (shown during gameplay) -->
-    <div id="game-header" class="hidden" style="position:fixed;top:0;left:0;width:100vw;height:60px;background:#111;color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.5em;z-index:300;pointer-events:none;box-shadow:0 2px 8px #000;">
-      <span id="game-title">Virtualter 3</span>
+    <div
+      id="game-header"
+      class="hidden"
+      style="
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 60px;
+        background: #111;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5em;
+        z-index: 300;
+        pointer-events: none;
+        box-shadow: 0 2px 8px #000;
+      "
+    >
+      <span id="game-title">Nome Temporário</span>
     </div>
 
     <script type="module" src="src/main.ts"></script>

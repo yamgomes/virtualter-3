@@ -6,15 +6,16 @@ export const GameplayState = {
   GoalCompleted: 3,
 } as const;
 
-export type GameplayStateType = typeof GameplayState[keyof typeof GameplayState];
+export type GameplayStateType =
+  (typeof GameplayState)[keyof typeof GameplayState];
 
 export class GameStateManager {
   private _currentState: GameplayStateType = GameplayState.WaitingToStart;
   private gameHeader: HTMLElement | null;
 
   constructor() {
-    this.gameHeader = document.getElementById("game-header");
-    this.updateHeader()
+    this.gameHeader = document.getElementById('game-header');
+    this.updateHeader();
   }
 
   get currentState(): GameplayStateType {
@@ -31,19 +32,19 @@ export class GameStateManager {
 
     switch (this._currentState) {
       case GameplayState.WaitingToStart:
-        this.gameHeader.innerText = "Virtualter 3 - Esperando iniciar";
+        this.gameHeader.innerText = 'Nome Temporário - Esperando iniciar';
         break;
       case GameplayState.Playing:
-        this.gameHeader.innerText = "Virtualter 3 - Jogando";
+        this.gameHeader.innerText = 'Nome Temporário - Jogando';
         break;
       case GameplayState.GoalActive:
-        this.gameHeader.innerText = "Virtualter 3 - Posicione seus braços!";
+        this.gameHeader.innerText = 'Nome Temporário - Posicione seus braços!';
         break;
       case GameplayState.GoalCompleted:
-        this.gameHeader.innerText = "Virtualter 3 - Meta concluída!";
+        this.gameHeader.innerText = 'Nome Temporário - Meta concluída!';
         break;
       default:
-        this.gameHeader.innerText = "Virtualter 3";
+        this.gameHeader.innerText = 'Nome Temporário';
         break;
     }
   }

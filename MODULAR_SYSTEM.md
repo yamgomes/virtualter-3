@@ -1,8 +1,8 @@
-# Sistema Modular de Jogos - Virtualter 3
+# Sistema Modular de Jogos - Nome Temporário
 
 ## Visão Geral
 
-O Virtualter 3 agora possui um sistema modular que permite a criação e seleção de diferentes tipos de jogos de exercícios. O sistema foi projetado para ser extensível, permitindo a adição fácil de novos modos de jogo.
+O Nome Temporário agora possui um sistema modular que permite a criação e seleção de diferentes tipos de jogos de exercícios. O sistema foi projetado para ser extensível, permitindo a adição fácil de novos modos de jogo.
 
 ## Estrutura do Sistema
 

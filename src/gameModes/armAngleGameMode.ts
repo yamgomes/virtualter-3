@@ -1,20 +1,21 @@
-import * as THREE from "three";
-import { BaseGameMode } from "../baseGameMode";
-import type { GameModeConfig } from "../gameMode";
-import type { Goal } from "../goals";
-import { createGoal } from "../goals";
+import * as THREE from 'three';
+import { BaseGameMode } from '../baseGameMode';
+import type { GameModeConfig } from '../gameMode';
+import type { Goal } from '../goals';
+import { createGoal } from '../goals';
 
 /**
  * Modo de jogo focado em ângulos dos braços
  * O jogador deve posicionar os braços nos ângulos indicados pelas esferas coloridas
  */
 export class ArmAngleGameMode extends BaseGameMode {
-  readonly name = "arm-angles";
-  readonly displayName = "Ângulos dos Braços";
-  readonly description = "Posicione seus braços nos ângulos indicados pelas esferas coloridas";
+  readonly name = 'arm-angles';
+  readonly displayName = 'Ângulos dos Braços';
+  readonly description =
+    'Posicione seus braços nos ângulos indicados pelas esferas coloridas';
 
   private goalBalls: GoalBall[] = [];
-  private ballRadius = 0.2;
+  private ballRadius = 0;
   private ballSpeed = 0.05;
   private ballDistance = 6;
   private screenCenter = new THREE.Vector3(0, 0, 0);
@@ -50,13 +51,20 @@ export class ArmAngleGameMode extends BaseGameMode {
   }
 
   public checkGoalAchieved(landmarks: any[], currentGoal: Goal): boolean {
-    if (!this.isGoalActive || this.isCompleting || !landmarks || landmarks.length === 0) {
+    if (
+      !this.isGoalActive ||
+      this.isCompleting ||
+      !landmarks ||
+      landmarks.length === 0
+    ) {
       return false;
     }
 
     // Verifica se as esferas chegaram ao centro
-    const ballsReachedCenter = this.goalBalls.every(ball => {
-      const distanceToCenter = ball.currentPosition.distanceTo(this.screenCenter);
+    const ballsReachedCenter = this.goalBalls.every((ball) => {
+      const distanceToCenter = ball.currentPosition.distanceTo(
+        this.screenCenter
+      );
       return distanceToCenter < 0.3;
     });
 
@@ -71,8 +79,16 @@ export class ArmAngleGameMode extends BaseGameMode {
     }
 
     const config = this.getGameConfig();
-    const leftMatch = this.isWithinTolerance(poseData.leftArm.angle, currentGoal.leftArm, config.tolerance);
-    const rightMatch = this.isWithinTolerance(poseData.rightArm.angle, currentGoal.rightArm, config.tolerance);
+    const leftMatch = this.isWithinTolerance(
+      poseData.leftArm.angle,
+      currentGoal.leftArm,
+      config.tolerance
+    );
+    const rightMatch = this.isWithinTolerance(
+      poseData.rightArm.angle,
+      currentGoal.rightArm,
+      config.tolerance
+    );
 
     if (leftMatch && rightMatch && !this.isCompleting) {
       this.isCompleting = true;
@@ -109,26 +125,29 @@ export class ArmAngleGameMode extends BaseGameMode {
           angle: armAngle,
           shoulder: leftShoulder,
           elbow: leftElbow,
-          wrist: leftWrist
+          wrist: leftWrist,
         };
       }
 
       // Calcula ângulo do braço direito
       if (rightShoulder && rightElbow && rightWrist) {
-        const shoulderElbowAngle = this.calculateAngle(rightShoulder, rightElbow);
+        const shoulderElbowAngle = this.calculateAngle(
+          rightShoulder,
+          rightElbow
+        );
         const armAngle = this.normalizeAngle(Math.abs(shoulderElbowAngle));
 
         rightArm = {
           angle: armAngle,
           shoulder: rightShoulder,
           elbow: rightElbow,
-          wrist: rightWrist
+          wrist: rightWrist,
         };
       }
 
       return { leftArm, rightArm };
     } catch (error) {
-      console.warn("Erro ao processar pose:", error);
+      console.warn('Erro ao processar pose:', error);
       return { leftArm: null, rightArm: null };
     }
   }
@@ -143,13 +162,13 @@ export class ArmAngleGameMode extends BaseGameMode {
           primary: 0xff4757,
           secondary: 0x3742fa,
           success: 0x2ed573,
-          error: 0xff4757
+          error: 0xff4757,
         },
         sizes: {
           goalSize: this.ballRadius,
-          indicatorSize: 0.1
-        }
-      }
+          indicatorSize: 0.1,
+        },
+      },
     };
   }
 
@@ -157,9 +176,12 @@ export class ArmAngleGameMode extends BaseGameMode {
   public updateGoalAnimation(): void {
     if (!this.isGoalActive || this.goalBalls.length === 0) return;
 
-    this.goalBalls.forEach(ball => {
+    this.goalBalls.forEach((ball) => {
       // Move a esfera em direção ao centro
-      const direction = this.screenCenter.clone().sub(ball.currentPosition).normalize();
+      const direction = this.screenCenter
+        .clone()
+        .sub(ball.currentPosition)
+        .normalize();
       const movement = direction.multiplyScalar(ball.speed);
 
       ball.currentPosition.add(movement);
@@ -202,7 +224,7 @@ export class ArmAngleGameMode extends BaseGameMode {
       isLeft: true,
       startPosition: leftStartPos.clone(),
       currentPosition: leftStartPos.clone(),
-      speed: this.ballSpeed
+      speed: this.ballSpeed,
     };
 
     const rightGoalBall: GoalBall = {
@@ -211,7 +233,7 @@ export class ArmAngleGameMode extends BaseGameMode {
       isLeft: false,
       startPosition: rightStartPos.clone(),
       currentPosition: rightStartPos.clone(),
-      speed: this.ballSpeed
+      speed: this.ballSpeed,
     };
 
     this.goalBalls = [leftGoalBall, rightGoalBall];
@@ -224,7 +246,7 @@ export class ArmAngleGameMode extends BaseGameMode {
   private clearGoalBalls(): void {
     if (!this.scene) return;
 
-    this.goalBalls.forEach(ball => {
+    this.goalBalls.forEach((ball) => {
       this.scene!.remove(ball.mesh);
     });
     this.goalBalls = [];
@@ -232,7 +254,7 @@ export class ArmAngleGameMode extends BaseGameMode {
 
   private animateGoalCompletion(): void {
     // Anima as esferas para indicar sucesso
-    this.goalBalls.forEach(ball => {
+    this.goalBalls.forEach((ball) => {
       const successMaterial = new THREE.MeshBasicMaterial({ color: 0x2ed573 });
       ball.mesh.material = successMaterial;
 
