@@ -1,14 +1,7 @@
-import { GameController } from "./gameController";
+import { GameController } from './gameController';
+import { MediaPipePoseSource } from './tracking/mediaPipePoseSource';
+import { MockSessionRepository } from './session/mockSessionRepository';
 
-// Aguarda o DOM estar totalmente carregado antes de inicializar o jogo
-document.addEventListener('DOMContentLoaded', () => {
-  new GameController();
-});
-
-// Fallback caso o DOMContentLoaded já tenha disparado
-if (document.readyState === 'loading') {
-  // DOM ainda está carregando, aguarda o evento
-} else {
-  // DOM já está pronto
-  new GameController();
-}
+const video = document.querySelector<HTMLVideoElement>('#camera');
+if (!video) throw new Error('Elemento de vídeo não encontrado');
+new GameController(new MediaPipePoseSource(video), new MockSessionRepository());

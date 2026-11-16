@@ -1,5 +1,5 @@
 // Gerenciamento de elementos UI
-import { UI_STYLES } from "./constants";
+import { UI_STYLES } from "../constants";
 
 export class UIManager {
   public startMsg!: HTMLDivElement;

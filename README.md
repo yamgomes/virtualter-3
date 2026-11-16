@@ -77,3 +77,4 @@ Para adicionar novas funcionalidades:
 3. **Novos Objetos 3D**: Modifique `sceneManager.ts`
 4. **Novas Detecções**: Estenda `poseDetector.ts`
 5. **Novas Configurações**: Adicione em `constants.ts`
+> **Fluxo atual do cliente:** consulte [CLIENTE_JOGADOR.md](./CLIENTE_JOGADOR.md) para a arquitetura ativa, instruções de execução e distinção entre o jogo dos ombros e os protótipos anteriores. A estrutura descrita neste README é histórica.

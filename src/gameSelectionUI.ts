@@ -1,4 +1,4 @@
-import { GameModeManager } from "./gameModeManager";
+import { GameModeManager } from "./core/gameModeManager";
 
 /**
  * Gerencia a interface de seleção de jogos

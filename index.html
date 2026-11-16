@@ -1,202 +1,81 @@
 <!doctype html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Nome Temporário</title>
-    <style>
-      html,
-      body {
-        margin: 0;
-        padding: 0;
-        overflow: hidden;
-        background: #000;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      }
-      canvas {
-        position: absolute;
-        top: 0;
-        left: 0;
-      }
-
-      /* Game Selection Screen */
-      #game-selection {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        z-index: 1000;
-        color: white;
-      }
-
-      .selection-header {
-        text-align: center;
-        margin-bottom: 40px;
-      }
-
-      .selection-header h1 {
-        font-size: 3em;
-        margin: 0 0 10px 0;
-        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-      }
-
-      .selection-header p {
-        font-size: 1.2em;
-        margin: 0;
-        opacity: 0.9;
-      }
-
-      .games-container {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 20px;
-        max-width: 1200px;
-        width: 90%;
-        margin-bottom: 30px;
-      }
-
-      .game-card {
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 15px;
-        padding: 25px;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        border: 2px solid transparent;
-        backdrop-filter: blur(10px);
-      }
-
-      .game-card:hover {
-        transform: translateY(-5px);
-        background: rgba(255, 255, 255, 0.2);
-        border-color: rgba(255, 255, 255, 0.3);
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-      }
-
-      .game-card.selected {
-        border-color: #4caf50;
-        background: rgba(76, 175, 80, 0.2);
-      }
-
-      .game-title {
-        font-size: 1.5em;
-        font-weight: bold;
-        margin-bottom: 10px;
-        color: #fff;
-      }
-
-      .game-description {
-        font-size: 1em;
-        margin-bottom: 15px;
-        opacity: 0.9;
-        line-height: 1.4;
-      }
-
-      .game-meta {
-        display: flex;
-        justify-content: space-between;
-        font-size: 0.9em;
-        opacity: 0.8;
-      }
-
-      .game-category {
-        background: rgba(255, 255, 255, 0.2);
-        padding: 4px 8px;
-        border-radius: 12px;
-        font-size: 0.8em;
-      }
-
-      .game-difficulty {
-        font-weight: bold;
-      }
-
-      .difficulty-easy {
-        color: #4caf50;
-      }
-      .difficulty-medium {
-        color: #ff9800;
-      }
-      .difficulty-hard {
-        color: #f44336;
-      }
-
-      .start-button {
-        background: linear-gradient(45deg, #4caf50, #45a049);
-        color: white;
-        border: none;
-        padding: 15px 40px;
-        font-size: 1.2em;
-        border-radius: 25px;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
-        text-transform: uppercase;
-        font-weight: bold;
-        letter-spacing: 1px;
-      }
-
-      .start-button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
-      }
-
-      .start-button:disabled {
-        background: #666;
-        cursor: not-allowed;
-        transform: none;
-        box-shadow: none;
-      }
-
-      .hidden {
-        display: none !important;
-      }
-    </style>
-  </head>
-  <body>
-    <!-- Game Selection Screen -->
-    <div id="game-selection">
-      <div class="selection-header">
-        <h1>Nome Temporário</h1>
-        <p>Escolha um jogo para começar sua sessão de exercícios</p>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Virtualter — sua sessão</title>
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <main class="app">
+    <header><span class="brand">virtualter <small>protótipo local</small></span><span class="header-note">Movimento no seu ritmo</span></header>
+    <section class="layout">
+      <div class="panel">
+        <div data-phase="welcome">
+          <p class="eyebrow">BEM-VINDO(A)</p>
+          <h1>Um movimento de cada vez.</h1>
+          <p>Digite o código da sua sessão para consultar a atividade e se preparar para começar.</p>
+          <div class="notice"><strong>Antes de começar</strong><br>Posicione a câmera de frente para você, em um local iluminado. Siga as orientações do seu profissional e respeite seus limites.</div>
+          <form id="code-form"><label for="session-code">Código da sessão</label><div class="code-entry"><input id="session-code" name="code" autocomplete="off" minlength="4" maxlength="4" pattern="[A-Za-z]{4}" title="Digite quatro letras" required placeholder="Ex.: QWER" /><button type="submit">Acessar <span>→</span></button></div></form>
+          <p class="demo-note"><strong>Demonstração local:</strong> use QWER, ASDF ou ZXCV. Os dados são fictícios.</p>
+          <p class="fine">O vídeo é processado neste dispositivo. O detector precisa de conexão para carregar seus arquivos.</p>
+        </div>
+        <div data-phase="plan" hidden>
+          <p class="eyebrow">SESSÃO DE DEMONSTRAÇÃO</p><h1>Olá, <span id="plan-name"></span>.</h1>
+          <p>Confira a atividade simulada antes de preparar a câmera.</p>
+          <div class="plan-card"><span class="plan-label">ATIVIDADE</span><h2 id="plan-title"></h2>
+            <div class="plan-details"><div><small>BRAÇOS</small><strong id="plan-side"></strong></div><div><small>ALVOS</small><strong id="plan-repetitions"></strong></div><div><small>NÍVEIS E / D</small><strong id="plan-targets"></strong></div><div><small>MANTER</small><strong id="plan-hold"></strong></div><div><small>BATIDA</small><strong id="plan-beat"></strong></div></div>
+          </div>
+          <button id="open-camera">Preparar minha sessão <span>→</span></button>
+          <button class="text-button" id="change-code">Usar outro código</button>
+          <section class="history"><h2>Últimas sessões neste navegador</h2><ul id="history-list"></ul><p>Histórico de demonstração, salvo somente neste dispositivo.</p></section>
+        </div>
+        <div data-phase="camera" hidden>
+          <p class="eyebrow">PREPARAÇÃO · 1 DE 3</p><h1>Vamos ajustar a câmera.</h1>
+          <p>Fique de frente para a câmera. Enquadre os dois ombros, cotovelos e quadris no vídeo.</p>
+          <p class="notice">Os dois braços serão calibrados separadamente, dentro do seu alcance confortável.</p>
+          <button id="calibrate">Continuar para calibração <span>→</span></button>
+        </div>
+        <div data-phase="rest" hidden>
+          <p class="eyebrow">CALIBRAÇÃO · 2 DE 3</p><h1>Comece em repouso.</h1>
+          <p>Deixe os dois braços confortavelmente junto ao corpo e mantenha a posição. A calibração avança sozinha.</p>
+        </div>
+        <div data-phase="maximum" hidden>
+          <p class="eyebrow">CALIBRAÇÃO · 3 DE 3</p><h1>Encontre seu alcance.</h1>
+          <p>Levante os dois braços até uma altura confortável, sem forçar, e mantenha a posição. Cada braço será calibrado separadamente.</p>
+        </div>
+        <div data-phase="rest maximum" hidden>
+          <p class="tracking" id="tracking" aria-live="polite"></p>
+          <progress id="calibration-progress" max="1" value="0" aria-label="Progresso da calibração automática"></progress>
+          <button class="text-button" id="retry-rest" data-phase="maximum" hidden>Refazer posição inicial</button>
+        </div>
+        <div data-phase="playing" hidden>
+          <p class="eyebrow">MODO RITMO</p><h1>Entre no ritmo.</h1>
+          <p>Ajuste os braços para alinhar os cotovelos aos círculos. As esferas chegam aos alvos na batida.</p>
+          <div class="stats"><div><small>BATIDA</small><strong><span id="beat-count">1</span> / <span id="planned-score">0</span></strong></div><div><small>ACERTOS</small><strong id="score">0</strong></div><div><small>PONTOS</small><strong id="points">0</strong></div></div>
+          <div class="progress-label"><span>Próxima batida</span><strong id="beat-time">0 s</strong></div>
+          <progress id="beat-progress" max="1" value="1" aria-label="Tempo até a próxima batida"></progress>
+          <div class="arm-target"><div class="progress-label"><span>🔵 Esquerdo · alvo <strong id="target-left">0%</strong></span><strong id="level-left">0%</strong></div><div class="target-track"><progress id="progress-left" max="1" value="0" aria-label="Posição do braço esquerdo"></progress><span id="marker-left" class="target-marker" aria-hidden="true"></span></div></div>
+          <div class="arm-target"><div class="progress-label"><span>🔴 Direito · alvo <strong id="target-right">0%</strong></span><strong id="level-right">0%</strong></div><div class="target-track"><progress id="progress-right" max="1" value="0" aria-label="Posição do braço direito"></progress><span id="marker-right" class="target-marker" aria-hidden="true"></span></div></div>
+          <p class="tracking" id="game-feedback" aria-live="polite">Ajuste os dois braços até os alvos.</p>
+          <button class="secondary" id="finish">Encerrar sessão</button>
+        </div>
+        <div data-phase="summary" hidden>
+          <p class="eyebrow">SESSÃO FINALIZADA</p><h1>Você concluiu sua sessão.</h1>
+          <p id="summary-text"></p><div class="notice"><span id="save-status">Salvando resultado local…</span><br>Este resumo não é uma avaliação clínica.</div>
+          <button id="restart">Voltar à atividade <span>→</span></button>
+        </div>
+        <button class="secondary cancel" id="cancel" data-phase="camera rest maximum" hidden>Cancelar preparação</button>
+        <p id="status" role="status" aria-live="polite"></p>
       </div>
-
-      <div class="games-container" id="games-container">
-        <!-- Games will be loaded dynamically -->
-      </div>
-
-      <button class="start-button" id="start-game-btn" disabled>
-        Começar Jogo
-      </button>
-    </div>
-
-    <!-- Game Header (shown during gameplay) -->
-    <div
-      id="game-header"
-      class="hidden"
-      style="
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 60px;
-        background: #111;
-        color: #fff;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.5em;
-        z-index: 300;
-        pointer-events: none;
-        box-shadow: 0 2px 8px #000;
-      "
-    >
-      <span id="game-title">Nome Temporário</span>
-    </div>
-
-    <script type="module" src="src/main.ts"></script>
-  </body>
+      <aside class="visual" aria-label="Prévia da câmera e representação do movimento">
+        <div class="visual-copy"><span>SEU ESPAÇO DE MOVIMENTO</span><h2>Comece de onde<br>você está.</h2><p>Uma sessão pensada para acompanhar o seu ritmo.</p></div>
+        <div class="stage-heading" data-phase="camera rest maximum playing" hidden><span>VIRTUALTER · MODO RITMO</span><strong>Seu movimento é o controle</strong></div>
+        <div id="camera-preview" class="video-wrap" data-phase="camera rest maximum playing" hidden><video id="camera" autoplay muted playsinline></video><span class="camera-label">CÂMERA AO VIVO</span></div>
+        <div class="stage-legend" data-phase="playing" hidden><span><i class="legend-blue"></i> ESQUERDO</span><span><i class="legend-pink"></i> DIREITO</span><small>Acompanhe as esferas até os círculos</small></div>
+      </aside>
+    </section>
+  </main>
+  <script type="module" src="/src/main.ts"></script>
+</body>
 </html>

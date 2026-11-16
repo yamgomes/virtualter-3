@@ -1,8 +1,8 @@
-import type { GameMode, GameModeMetadata } from "./gameMode";
-import { ArmAngleGameMode } from "./gameModes/armAngleGameMode";
-import { SurfingGameMode } from "./gameModes/surfingGameMode";
-import { SitStandGameMode } from "./gameModes/sitStandGameMode";
-import { SwimmingGameMode } from "./gameModes/swimmingGameMode";
+import type { GameMode, GameModeMetadata } from "../gameMode";
+import { ArmAngleGameMode } from "../games/armAngleGameMode";
+import { SurfingGameMode } from "../games/surfingGameMode";
+import { SitStandGameMode } from "../games/sitStandGameMode";
+import { SwimmingGameMode } from "../games/swimmingGameMode";
 
 /**
  * Gerenciador central para todos os modos de jogo

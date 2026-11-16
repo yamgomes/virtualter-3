@@ -1,8 +1,8 @@
 import * as THREE from "three";
 import { Sky } from "three/examples/jsm/objects/Sky.js";
-import { Character } from "./character";
-import { GoalManager } from "./goalManager";
-import { GAME_CONFIG } from "./constants";
+import { Character } from "../character";
+import { GoalManager } from "../goalManager";
+import { GAME_CONFIG } from "../constants";
 
 export class SceneManager {
   public scene: THREE.Scene;

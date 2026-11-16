@@ -4,20 +4,17 @@ import { GAME_CONFIG } from "./constants";
 
 export class PoseDetector {
   private poseLandmarker!: PoseLandmarker;
-  private mirrorCanvas: HTMLCanvasElement;
-  private mirrorCtx: CanvasRenderingContext2D;
   private video: HTMLVideoElement;
   private isInitialized = false;
 
   constructor(video: HTMLVideoElement) {
     this.video = video;
-    this.mirrorCanvas = document.createElement("canvas");
-    this.mirrorCtx = this.mirrorCanvas.getContext("2d")!;
   }
 
   async initialize(): Promise<void> {
+    if (this.isInitialized) return;
     const vision = await FilesetResolver.forVisionTasks(
-      "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm"
+      "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22-rc.20250304/wasm"
     );
 
     this.poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
@@ -31,21 +28,6 @@ export class PoseDetector {
     this.isInitialized = true;
   }
 
-  private prepareMirroredVideo(): void {
-    if (!this.video.videoWidth || !this.video.videoHeight) return;
-
-    this.mirrorCanvas.width = this.video.videoWidth;
-    this.mirrorCanvas.height = this.video.videoHeight;
-    this.mirrorCtx.save();
-    this.mirrorCtx.scale(-1, 1);
-    this.mirrorCtx.drawImage(
-      this.video,
-      0, 0, this.video.videoWidth, this.video.videoHeight,
-      -this.video.videoWidth, 0, this.video.videoWidth, this.video.videoHeight
-    );
-    this.mirrorCtx.restore();
-  }
-
   async detectPose(): Promise<PoseLandmarkerResult | null> {
     if (!this.isInitialized || this.video.readyState < 2) {
       return null;
@@ -56,8 +38,7 @@ export class PoseDetector {
       return null;
     }
 
-    this.prepareMirroredVideo();
-    return await this.poseLandmarker.detectForVideo(this.mirrorCanvas, performance.now());
+    return this.poseLandmarker.detectForVideo(this.video, performance.now());
   }
 
   static detectTPose(landmarks: any[]): boolean {
