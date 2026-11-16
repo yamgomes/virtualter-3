@@ -11,6 +11,8 @@ npm run dev
 
 Códigos fictícios: **QWER**, **ASDF** e **ZXCV** para ombros; **SURF** para surfe com o lado esquerdo voltado à câmera; **ONDA** para surfe com o lado direito. Siga o enquadramento exibido antes de calibrar.
 
+Na tela inicial, **Experimentar o goleiro** abre a demonstração local. Após a calibração dos ombros, mova a luva do lado da bola até o círculo amarelo quando ela chegar à linha do gol. A partida termina após oito chutes e o resultado é salvo no navegador.
+
 ```sh
 npm run typecheck
 npm test

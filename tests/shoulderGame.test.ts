@@ -40,26 +40,28 @@ test('filtro reinicia quando um ponto perde confiança ou há interrupção long
   assert.equal(filter.filter(moved).points.leftElbow?.x, 0.2);
   assert.equal(filter.filter({ ...frame, timestamp: 3000 }).points.leftElbow?.x, 0.7);
 });
+const range = { left: { rest: 0, maximum: 100 }, right: { rest: 0, maximum: 100 } };
+
 test('reconhece a pose dos dois braços assim que ela é mantida, antes do prazo', () => {
-  const game = new ShoulderGame({ targets: [{ left: 0.5, right: 0.8 }, { left: 0.8, right: 0.5 }], repetitions: 2, holdMs: 300, timeLimitMs: 1200 });
-  game.update({ left: 0.5, right: 0.8 }, 0);
-  assert.equal(game.update({ left: 0.5, right: 0.8 }, 300)[0].type, 'hit');
+  const game = new ShoulderGame({ targets: [{ left: 0.5, right: 0.8 }, { left: 0.8, right: 0.5 }], repetitions: 2, holdMs: 300, timeLimitMs: 1200 }, range);
+  game.update({ left: 50, right: 80 }, 0);
+  assert.equal(game.update({ left: 50, right: 80 }, 300)[0].type, 'hit');
   assert.equal(game.hits, 1); assert.equal(game.completed, 1);
-  assert.deepEqual(game.target, { left: 0.8, right: 0.5 });
-  game.update({ left: 0.8, right: 0.8 }, 600);
-  game.update({ left: 0.8, right: 0.8 }, 900);
-  game.update({ left: 0.8, right: 0.8 }, 1200);
-  assert.deepEqual(game.update({ left: 0.8, right: 0.8 }, 1500).map(e => e.type), ['miss', 'completed']);
+  assert.deepEqual(game.target, { left: 80, right: 50 });
+  game.update({ left: 80, right: 80 }, 600);
+  game.update({ left: 80, right: 80 }, 900);
+  game.update({ left: 80, right: 80 }, 1200);
+  assert.deepEqual(game.update({ left: 80, right: 80 }, 1500).map(e => e.type), ['miss', 'completed']);
   assert.equal(game.points, 10);
 });
 test('perda de rastreamento pausa o prazo e reinicia a permanência', () => {
-  const game = new ShoulderGame({ targets: [{ left: 0.5, right: 0.5 }], repetitions: 1, holdMs: 400, timeLimitMs: 600 });
-  const pose = { left: 0.5, right: 0.5 };
+  const game = new ShoulderGame({ targets: [{ left: 0.5, right: 0.5 }], repetitions: 1, holdMs: 400, timeLimitMs: 600 }, range);
+  const pose = { left: 50, right: 50 };
   game.update(pose, 0); game.update(pose, 300); game.update(null, 400);
   game.update(pose, 5000); assert.equal(game.remainingMs, 300);
   assert.deepEqual(game.update(pose, 5300).map(e => e.type), ['miss', 'completed']);
 });
 test('configuração inválida é rejeitada', () => {
-  assert.throws(() => new ShoulderGame({ targets: [], repetitions: 1, holdMs: 1, timeLimitMs: 1000 }));
-  assert.throws(() => new ShoulderGame({ targets: [{ left: 0.2, right: 1.1 }], repetitions: 1, holdMs: 1, timeLimitMs: 1000 }));
+  assert.throws(() => new ShoulderGame({ targets: [], repetitions: 1, holdMs: 1, timeLimitMs: 1000 }, range));
+  assert.throws(() => new ShoulderGame({ targets: [{ left: 0.2, right: 1.1 }], repetitions: 1, holdMs: 1, timeLimitMs: 1000 }, range));
 });

@@ -7,6 +7,18 @@ const identity = {
   displayName: 'Jogador demonstração',
 };
 const plans: Record<string, SessionPlan> = {
+  GOOL: {
+    ...identity,
+    id: 'goleiro-demo',
+    title: 'Defenda o gol',
+    gameId: 'goalkeeper',
+    config: {
+      repetitions: 8,
+      timeLimitMs: 2200,
+      tolerance: 0.18,
+      pointsPerHit: 10,
+    },
+  },
   QWER: {
     ...identity,
     id: 'ritmo-suave',

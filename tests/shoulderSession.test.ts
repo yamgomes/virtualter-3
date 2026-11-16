@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { ShoulderSession } from '../src/games/shoulder/shoulderSession';
+import type { ShoulderSceneState } from '../src/games/shoulder/shoulderScene';
 import type { ShoulderConfig } from '../src/session/types';
 
 class FakeElement {
@@ -56,11 +57,11 @@ const plan: ShoulderConfig = {
 test('jogo monta e remove seus próprios recursos sem tocar na prévia', () => {
   const stage = new FakeElement(),
     panel = new FakeElement();
-  let disposed = false,
-    rendered = 0;
+  let disposed = false;
+  const rendered: ShoulderSceneState[] = [];
   const scene = {
-    update: () => {
-      rendered++;
+    update: (state: ShoulderSceneState) => {
+      rendered.push(state);
     },
     dispose: () => {
       disposed = true;
@@ -68,19 +69,23 @@ test('jogo monta e remove seus próprios recursos sem tocar na prévia', () => {
   };
   const session = new ShoulderSession(
     plan,
+    { left: { rest: 0, maximum: 80 }, right: { rest: 10, maximum: 90 } },
     stage as unknown as HTMLElement,
     panel as unknown as HTMLElement,
     () => scene
   );
   assert.ok(stage.classes.has('shoulder-game-stage'));
   assert.ok(panel.classes.has('shoulder-game-ui'));
-  assert.equal(session.update({ left: 0.5, right: 0.5 }, 0), false);
-  assert.equal(session.update({ left: 0.5, right: 0.5 }, 100), true);
+  const angles = { left: 42, right: 48 };
+  assert.equal(session.update(angles, 0), false);
+  assert.equal(session.update(angles, 100), true);
   assert.equal(session.hits, 1);
-  assert.equal(rendered, 0);
+  assert.equal(rendered.length, 0);
+  const goalAngles = { left: 40, right: 50 };
   session.render(100);
   session.render(116);
-  assert.equal(rendered, 2);
+  assert.equal(rendered.length, 2);
+  assert.deepEqual(rendered[0], { angles, goalAngles, now: 100 });
   assert.equal(session.result().attempts.length, 1);
   const legend = created.at(-1)!;
   session.dispose();

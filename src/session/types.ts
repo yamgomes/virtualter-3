@@ -19,6 +19,9 @@ export interface SurfConfig extends ChallengeConfig {
   targets: number[];
   side: 'left' | 'right';
 }
+export type GoalkeeperConfig = Omit<ChallengeConfig, 'holdMs' | 'sessionDurationMs'> & {
+  sessionDurationMs?: never;
+};
 interface PlanIdentity {
   id: string;
   version: number;
@@ -32,6 +35,7 @@ export type SessionPlan = PlanIdentity &
   (
     | { gameId: 'shoulder'; config: ShoulderConfig }
     | { gameId: 'surfing'; config: SurfConfig }
+    | { gameId: 'goalkeeper'; config: GoalkeeperConfig }
   );
 export interface AttemptResult {
   index: number;
@@ -111,16 +115,16 @@ export function isSessionPlan(value: unknown): value is SessionPlan {
     !count(c.repetitions) ||
     c.repetitions < 1 ||
     c.repetitions > 1000 ||
-    !number(c.holdMs) ||
-    c.holdMs < 0 ||
     !number(c.timeLimitMs) ||
     c.timeLimitMs <= 0 ||
     c.timeLimitMs > 3600000 ||
-    c.holdMs > c.timeLimitMs ||
     !number(c.tolerance) ||
     c.tolerance <= 0 ||
     c.tolerance > 0.5
   )
+    return false;
+  if (value.gameId === 'goalkeeper') return c.sessionDurationMs === undefined;
+  if (!number(c.holdMs) || c.holdMs < 0 || c.holdMs > c.timeLimitMs)
     return false;
   if (value.gameId === 'shoulder' && c.targets === undefined) return true;
   if (!Array.isArray(c.targets) || !c.targets.length || c.targets.length > 1000)
@@ -203,7 +207,7 @@ export function isSessionResult(value: unknown): value is SessionResult {
   )
     return false;
   const c = value.calibration;
-  return plan.gameId === 'shoulder'
+  return plan.gameId === 'shoulder' || plan.gameId === 'goalkeeper'
     ? number(c.leftRest) &&
         number(c.leftMaximum) &&
         number(c.rightRest) &&

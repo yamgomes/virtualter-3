@@ -31,7 +31,7 @@ Câmera → PoseSource → PoseBuffer / PoseFilter
                            ↓
                     GameActivity
                     ├─ sensor e calibração do exercício
-                    ├─ regras com entrada normalizada
+                    ├─ regras com entrada na unidade do jogo
                     └─ cena e interface próprias
                            ↓
                    resultado da sessão → ResultOutbox → SessionRepository
@@ -39,9 +39,9 @@ Câmera → PoseSource → PoseBuffer / PoseFilter
 
 `GameController` coordena câmera, fases da sessão, pausa, encerramento e repositório. Não importa jogos concretos nem conhece articulações. `main.ts` injeta a fábrica de `games/registry.ts`, o detector e o repositório.
 
-`GameActivity` é o coordenador privado de cada jogo: recebe frames, compõe sensores/calibração e encaminha controles normalizados às regras. Seu contrato expõe instruções, descrição do plano, calibração, início, atualização, renderização, resultado e descarte. Não obriga os jogos a compartilhar avatar, cena ou tecnologia gráfica.
+`GameActivity` é o coordenador privado de cada jogo: recebe frames, compõe sensores e calibração e encaminha os controles na unidade usada pelas regras. Seu contrato expõe instruções, descrição do plano, calibração, início, atualização, renderização, resultado e descarte.
 
-No Semáforo, `ShoulderInput` mede os ângulos da câmera e converte a elevação de cada braço para um valor entre `0` e `1`. A sessão, as regras e a cena Three.js usam esses níveis. O personagem e os alvos percorrem o mesmo arco visual de 180 graus, da posição para baixo até a posição para cima. A atividade acrescenta os dados da calibração ao resultado para o histórico. O surfe usa `SurfGame` e uma cena Canvas 2D. Ambos reutilizam `TargetChallenge`, a mecânica de manter um alvo por um período.
+No Semáforo, `ShoulderInput` entrega os ângulos projetados pela câmera em graus. As regras comparam essa medida com os alvos em graus, e a cena Three.js usa os mesmos valores para desenhar o personagem e os círculos. A atividade acrescenta os dados da calibração ao resultado para o histórico. O surfe usa `SurfGame` e uma cena Canvas 2D. Ambos reutilizam `TargetChallenge`, a mecânica de manter um alvo por um período.
 
 O detector atual é MediaPipe. Nomes de pontos e o contrato `PoseSource` isolam o restante do cliente dos índices e tipos do SDK. Os arquivos WASM são empacotados pelo Vite a partir da mesma versão instalada do SDK; o modelo ainda é carregado de um endereço externo. O cliente não é inteiramente offline.
 
@@ -59,7 +59,7 @@ Separar os ciclos não retira a inferência síncrona do MediaPipe da thread pri
 
 O painel do fisioterapeuta será desenvolvido no projeto separado `C:/Repo/homephysio-doc`. Este repositório mantém o cliente do jogador. A comunicação entre os projetos deverá ocorrer por contratos versionados e pelo backend Firebase; o painel não deverá importar componentes internos das cenas dos jogos.
 
-`SessionPlan` é uma união discriminada por `gameId`. No Semáforo, cada braço tem seu próprio repouso (`0`). A calibração mede a amplitude dos dois lados e usa a menor como limite (`1`) para ambos. Elevações além do limite continuam valendo `1`. A cada tentativa, o jogo sorteia um valor nesse intervalo para cada lado. No Surfe, o plano define os alvos de inclinação e o lado observado. Os dois jogos recebem prazo, permanência e tolerância. `version` identifica a versão do plano. `isSessionPlan` valida os dados na entrada; valores inválidos impedem iniciar a atividade.
+`SessionPlan` é uma união discriminada por `gameId`. No Semáforo, cada braço tem seu próprio ângulo de repouso. A calibração usa a menor amplitude medida para definir o ângulo máximo dos alvos de cada lado. A cada tentativa, o jogo sorteia um ângulo nesses limites. A tolerância em porcentagem do plano é aplicada sobre a amplitude calibrada para determinar a margem em graus. Planos antigos com alvos fixos entre `0` e `1` são convertidos em graus ao iniciar. No Surfe, o plano define os alvos de inclinação e o lado observado. Os dois jogos recebem prazo, permanência e tolerância. `version` identifica a versão do plano. `isSessionPlan` valida os dados na entrada; valores inválidos impedem iniciar a atividade.
 
 O resultado v2 inclui ID estável, versão do jogo, cópia do plano, calibração utilizada, acertos, erros, pontos, resumo de cada tentativa concluída, tempo ativo/pausado/total e motivo de encerramento (`completed`, `stopped`, `error`). O total de tentativas pode ser menor que o planejado em uma sessão interrompida. A posição atual de uma tentativa incompleta não é persistida. Não são gravados vídeos ou séries contínuas de landmarks. Pontuação é lúdica, sem interpretação clínica.
 
@@ -73,7 +73,7 @@ O repositório de demonstração faz upsert no `localStorage`. Ele preserva o hi
 
 1. Defina a variante de configuração em `session/types.ts` e sua validação.
 2. Crie ou reutilize sensores e calibração em `exercise/`.
-3. Implemente regras que recebam controles normalizados e possam ser testadas sem navegador.
+3. Implemente regras que recebam controles na unidade escolhida pelo jogo e possam ser testadas sem navegador.
 4. Crie sua apresentação e um `GameActivity` que componha esses elementos.
 5. Registre a fábrica em `games/registry.ts` e um plano no mock.
 6. Teste preparação, perda de rastreamento, pausa, conclusão, interrupção e descarte.

@@ -22,6 +22,7 @@ export class FirebaseSessionRepository implements SessionRepository {
   async getPlanByCode(input: string): Promise<SessionPlan | null> {
     this.loaded = null;
     const code = normalizeCode(input);
+    if (code === 'GOOL') return this.local.getPlanByCode(code);
     if (!validIssuedCode(code)) return null;
     try {
       const snapshot = await getDocFromServer(doc(this.db, 'patientAccess', code));
@@ -37,6 +38,8 @@ export class FirebaseSessionRepository implements SessionRepository {
     }
   }
   async validateAccess(plan: SessionPlan): Promise<boolean> {
+    if (plan.gameId === 'goalkeeper')
+      return plan.id === 'goleiro-demo' && plan.patientId === 'jogador-demo';
     const loaded = this.loaded;
     if (!loaded || loaded.patientId !== plan.patientId || loaded.revision !== plan.version) return false;
     const snapshot = await getDocFromServer(doc(this.db, 'patientAccess', loaded.code));

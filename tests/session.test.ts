@@ -17,6 +17,7 @@ const repo = new MockSessionRepository();
 test('planos distintos, surfe de cada lado e cópias independentes', async () => {
   const left = await repo.getPlanByCode(' qwer '),
     right = await repo.getPlanByCode('ASDF');
+  assert.ok(left?.gameId === 'shoulder' && right?.gameId === 'shoulder');
   assert.equal(left?.config.timeLimitMs, 6000);
   assert.equal(right?.config.timeLimitMs, 5000);
   assert.equal(left?.config.targets, undefined);
@@ -28,7 +29,6 @@ test('planos distintos, surfe de cada lado e cópias independentes', async () =>
   assert.equal(wave.config.side, 'right');
   for (const code of ['QWE1', 'QWE', '__proto__', 'inexistente'])
     assert.equal(await repo.getPlanByCode(code), null);
-  assert.ok(left?.gameId === 'shoulder');
   left.config.timeLimitMs = 1000;
   assert.equal((await repo.getPlanByCode('QWER'))?.config.timeLimitMs, 6000);
 });

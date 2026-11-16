@@ -1,0 +1,31 @@
+.video-wrap.goalkeeper-stage {
+  background: linear-gradient(#559bcc 0%, #8dc1d9 65%, #518f55 65%, #367949 100%);
+}
+
+.goalkeeper-stage video,
+.goalkeeper-stage .camera-label {
+  visibility: hidden;
+}
+
+.video-wrap canvas.goalkeeper-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 1;
+  z-index: 1;
+}
+
+.camera-active .panel .goalkeeper-score {
+  color: #fff;
+  font-weight: 750;
+}
+
+.goalkeeper-credits {
+  color: #b7cce6;
+  font-size: 0.85rem;
+}
+
+.goalkeeper-credits a {
+  color: #b8e9ff;
+}

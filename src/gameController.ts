@@ -93,8 +93,13 @@ export class GameController {
       'submit',
       (event) => {
         event.preventDefault();
-        void this.loadPlan();
+        void this.loadPlan(this.el<HTMLInputElement>('session-code').value);
       },
+      options
+    );
+    this.el('try-goalkeeper').addEventListener(
+      'click',
+      () => void this.loadPlan('GOOL'),
       options
     );
     this.el('change-code').addEventListener(
@@ -239,16 +244,14 @@ export class GameController {
     );
     window.addEventListener('beforeunload', () => this.dispose(), options);
   }
-  private async loadPlan(): Promise<void> {
+  private async loadPlan(code: string): Promise<void> {
     if (!['welcome', 'loading'].includes(this.phase)) return;
     const generation = ++this.planGeneration;
     this.phase = 'loading';
     this.message('Carregando atividade…');
     this.update();
     try {
-      const plan = await this.repository.getPlanByCode(
-        this.el<HTMLInputElement>('session-code').value
-      );
+      const plan = await this.repository.getPlanByCode(code);
       if (this.disposed || generation !== this.planGeneration) return;
       if (!isSessionPlan(plan))
         throw new Error(
@@ -312,7 +315,8 @@ export class GameController {
           title = document.createElement('strong'),
           detail = document.createElement('span');
         title.textContent = result.plan.title;
-        detail.textContent = `${new Date(result.completedAt).toLocaleString('pt-BR')} · ${result.hits}/${result.plannedAttempts} acertos · ${result.endReason === 'completed' ? 'concluída' : 'interrompida'}`;
+        const scored = result.plan.gameId === 'goalkeeper' ? 'defesas' : 'acertos';
+        detail.textContent = `${new Date(result.completedAt).toLocaleString('pt-BR')} · ${result.hits}/${result.plannedAttempts} ${scored} · ${result.endReason === 'completed' ? 'concluída' : 'interrompida'}`;
         row.append(title, detail);
         list.append(row);
       }
@@ -651,9 +655,10 @@ export class GameController {
         : endReason === 'error'
           ? 'A sessão encontrou um erro.'
           : 'Sessão encerrada por você.';
+    const goalkeeper = result.plan.gameId === 'goalkeeper';
     const summaries = {
-      hits: `${result.hits} acertos (meta mínima: ${result.plannedAttempts})`,
-      misses: `${result.misses} alvos não alcançados`,
+      hits: goalkeeper ? `${result.hits} defesas em ${result.attempts.length} chutes` : `${result.hits} acertos (meta mínima: ${result.plannedAttempts})`,
+      misses: `${result.misses} ${goalkeeper ? 'gols sofridos' : 'alvos não alcançados'}`,
       points: `${result.points} pontos`,
       activeMs: `Tempo ativo: ${Math.round(result.activeMs / 1000)} s`,
       pausedMs: `Pausas: ${Math.round(result.pausedMs / 1000)} s`,
@@ -745,6 +750,7 @@ export class GameController {
     this.el<HTMLButtonElement>('resume').disabled = this.postureBlocked && !!this.stream;
     this.el<HTMLButtonElement>('access-plan').disabled =
       this.phase === 'loading';
+    this.el<HTMLButtonElement>('try-goalkeeper').disabled = this.phase === 'loading';
   }
   dispose(): void {
     if (this.disposed) return;
