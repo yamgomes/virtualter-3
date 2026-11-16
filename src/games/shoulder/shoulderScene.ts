@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import type { ShoulderLevels } from '../../exercise/shoulderInput';
+import type { ShoulderAngles } from '../../exercise/automaticCalibration';
 import type { Side } from '../../exercise/shoulderMotion';
 import { avatarArm } from './avatarPose';
 
@@ -15,8 +15,8 @@ type ArmVisual = {
   glowColor: THREE.MeshBasicMaterial;
 };
 export interface ShoulderSceneState {
-  target: ShoulderLevels;
-  levels: ShoulderLevels;
+  goalAngles: ShoulderAngles;
+  angles: ShoulderAngles;
   now: number;
 }
 /** Cena privada do jogo; todos os recursos são criados e descartados pelo jogo. */
@@ -111,8 +111,8 @@ export class ShoulderScene {
     this.camera.updateProjectionMatrix();
     for (const side of ['left', 'right'] as const) {
       const arm = this.arms.get(side)!,
-        current = avatarArm(side, state.levels[side]);
-      const goal = avatarArm(side, state.target[side]);
+        current = avatarArm(side, state.angles[side]);
+      const goal = avatarArm(side, state.goalAngles[side]);
       this.segment(arm.upper, current.shoulder, current.elbow);
       this.segment(arm.lower, current.elbow, current.hand);
       arm.elbow.position.set(...current.elbow, 0.02);

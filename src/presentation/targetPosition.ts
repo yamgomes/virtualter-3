@@ -1,9 +1,10 @@
 import type { PoseFrame } from '../tracking/types';
-import type { BilateralCalibration, ShoulderValues } from '../exercise/automaticCalibration';
+import type { BilateralCalibration } from '../exercise/automaticCalibration';
+import type { ShoulderLevels } from '../exercise/shoulderInput';
 import type { Side } from '../exercise/shoulderMotion';
 
 /** Posição na cena espelhada do cotovelo para o ângulo-alvo projetado. */
-export function targetPosition(frame: PoseFrame, calibration: BilateralCalibration, targets: ShoulderValues, side: Side): { x: number; y: number } | null {
+export function targetPosition(frame: PoseFrame, calibration: BilateralCalibration, targets: ShoulderLevels, side: Side): { x: number; y: number } | null {
   const p = frame.points, aspect = frame.aspectRatio;
   const shoulder = p[side === 'left' ? 'leftShoulder' : 'rightShoulder'];
   const other = p[side === 'left' ? 'rightShoulder' : 'leftShoulder'];

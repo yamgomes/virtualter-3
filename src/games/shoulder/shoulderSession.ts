@@ -1,5 +1,5 @@
 import './style.css';
-import type { ShoulderLevels } from '../../exercise/shoulderInput';
+import type { BilateralCalibration, ShoulderAngles } from '../../exercise/automaticCalibration';
 import type { GameResult, ShoulderConfig } from '../../session/types';
 import { ShoulderGame } from './shoulderGame';
 import { ShoulderScene } from './shoulderScene';
@@ -15,15 +15,16 @@ export class ShoulderSession {
   private stage: HTMLElement;
   private panel: HTMLElement;
   private legend: HTMLElement;
-  private lastLevels: ShoulderLevels | null = null;
+  private lastAngles: ShoulderAngles | null = null;
   private trackingLost = false;
   constructor(
     plan: ShoulderConfig,
+    range: BilateralCalibration,
     stage: HTMLElement,
     panel: HTMLElement,
     createScene: SceneFactory = (element) => new ShoulderScene(element)
   ) {
-    this.game = new ShoulderGame(plan);
+    this.game = new ShoulderGame(plan, range);
     this.stage = stage;
     this.panel = panel;
     this.scene = createScene(stage);
@@ -32,8 +33,8 @@ export class ShoulderSession {
       <p>Mova os dois braços para levar as mãos do personagem aos círculos antes que o tempo acabe.</p>
       <div class="stats"><div><small>META MÍNIMA</small><strong data-field="total"></strong></div><div><small>ACERTOS</small><strong data-field="score">0</strong></div><div><small>PONTOS</small><strong data-field="points">0</strong></div></div>
       <div class="progress-label"><span>Tempo restante</span><strong data-field="time"></strong></div><progress data-field="time-progress" max="1" value="1" aria-label="Tempo restante"></progress>
-      <div class="arm-target"><div class="progress-label"><span>🔵 Esquerdo · alvo <strong data-field="target-left"></strong></span><strong data-field="level-left">0%</strong></div><div class="target-track"><progress data-field="progress-left" max="1" value="0" aria-label="Posição do braço esquerdo"></progress><span data-field="marker-left" class="target-marker" aria-hidden="true"></span></div></div>
-      <div class="arm-target"><div class="progress-label"><span>🔴 Direito · alvo <strong data-field="target-right"></strong></span><strong data-field="level-right">0%</strong></div><div class="target-track"><progress data-field="progress-right" max="1" value="0" aria-label="Posição do braço direito"></progress><span data-field="marker-right" class="target-marker" aria-hidden="true"></span></div></div>
+      <div class="arm-target"><div class="progress-label"><span>🔵 Esquerdo · alvo <strong data-field="target-left"></strong></span><strong data-field="angle-left">—</strong></div><div class="target-track"><progress data-field="progress-left" max="180" value="0" aria-label="Ângulo do braço esquerdo em graus"></progress><span data-field="marker-left" class="target-marker" aria-hidden="true"></span></div></div>
+      <div class="arm-target"><div class="progress-label"><span>🔴 Direito · alvo <strong data-field="target-right"></strong></span><strong data-field="angle-right">—</strong></div><div class="target-track"><progress data-field="progress-right" max="180" value="0" aria-label="Ângulo do braço direito em graus"></progress><span data-field="marker-right" class="target-marker" aria-hidden="true"></span></div></div>
       <p class="tracking" data-field="feedback" aria-live="polite">Ajuste os dois braços até os alvos.</p>`;
     this.legend = document.createElement('div');
     this.legend.className = 'stage-legend shoulder-game-legend';
@@ -52,21 +53,21 @@ export class ShoulderSession {
   get points(): number {
     return this.game.points;
   }
-  update(levels: ShoulderLevels | null, now: number): boolean {
-    if (levels) {
-      this.lastLevels = levels;
+  update(angles: ShoulderAngles | null, now: number): boolean {
+    if (angles) {
+      this.lastAngles = angles;
       for (const side of ['left', 'right'] as const) {
         this.field<HTMLProgressElement>(`progress-${side}`).value =
-          levels[side];
-        this.field(`level-${side}`).textContent =
-          Math.round(levels[side] * 100) + '%';
+          angles[side];
+        this.field(`angle-${side}`).textContent =
+          Math.round(angles[side]) + '°';
       }
       if (this.trackingLost) {
         this.field('feedback').textContent =
           'Rastreamento retomado. Complete a pose.';
         this.trackingLost = false;
       }
-      const events = this.game.update(levels, now);
+      const events = this.game.update(angles, now);
       this.refresh();
       if (events.some((event) => event.type === 'hit'))
         this.field('feedback').textContent = 'Boa pose! Prepare a próxima.';
@@ -83,8 +84,8 @@ export class ShoulderSession {
     return false;
   }
   render(now: number): void {
-    if (!this.lastLevels) return;
-    this.scene.update({ levels: this.lastLevels, target: this.game.target, now });
+    if (!this.lastAngles) return;
+    this.scene.update({ angles: this.lastAngles, goalAngles: this.game.target, now });
   }
   result(): Omit<GameResult, 'calibration'> {
     return {
@@ -101,9 +102,9 @@ export class ShoulderSession {
     this.field('total').textContent = String(this.game.config.repetitions);
     for (const side of ['left', 'right'] as const) {
       this.field(`target-${side}`).textContent =
-        Math.round(this.game.target[side] * 100) + '%';
+        Math.round(this.game.target[side]) + '°';
       this.field(`marker-${side}`).style.left =
-        this.game.target[side] * 100 + '%';
+        this.game.target[side] / 180 * 100 + '%';
     }
     this.field<HTMLProgressElement>('time-progress').value =
       this.game.remainingMs /

@@ -5,7 +5,7 @@ import { ShoulderInput } from '../../exercise/shoulderInput';
 import { ShoulderSession } from './shoulderSession';
 
 export class ShoulderActivity implements GameActivity {
-  readonly version = '1.3.0';
+  readonly version = '1.5.0';
   readonly instructions =
     'Fique de frente para a câmera. Enquadre os dois ombros, cotovelos e quadris. Primeiro mantenha os braços em repouso. Depois levante cada braço até a altura máxima que conseguir confortavelmente.';
   readonly planDescription: string;
@@ -34,14 +34,15 @@ export class ShoulderActivity implements GameActivity {
     this.input.reset();
   }
   start(stage: HTMLElement, panel: HTMLElement): void {
-    if (!this.input.calibration) throw new Error('Calibração necessária');
-    this.session = new ShoulderSession(this.config, stage, panel);
+    const range = this.input.calibration;
+    if (!range) throw new Error('Calibração necessária');
+    this.session = new ShoulderSession(this.config, range, stage, panel);
   }
   update(frame: PoseFrame | null, now: number) {
-    const levels = this.input.read(frame);
+    const angles = this.input.read(frame);
     return {
-      tracking: levels !== null,
-      completed: this.session?.update(levels, now) ?? false,
+      tracking: angles !== null,
+      completed: this.session?.update(angles, now) ?? false,
     };
   }
   render(now: number): void {

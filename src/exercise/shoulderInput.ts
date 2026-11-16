@@ -1,9 +1,9 @@
 import type { PoseFrame } from '../tracking/types';
 import { AutomaticCalibration } from './automaticCalibration';
-import type { BilateralCalibration } from './automaticCalibration';
-import { normalizeShoulder, shoulderAngle } from './shoulderMotion';
+import type { BilateralCalibration, ShoulderAngles } from './automaticCalibration';
+import { shoulderAngle } from './shoulderMotion';
 
-/** Elevação de cada braço em [0, 1], do repouso até o limite comum. */
+/** Níveis usados pelos alvos fixos de planos antigos. */
 export interface ShoulderLevels {
   left: number;
   right: number;
@@ -35,12 +35,7 @@ export class ShoulderInput {
     this.range = undefined;
   }
 
-  read(frame: PoseFrame | null): ShoulderLevels | null {
-    const angles = measure(frame);
-    if (!angles || !this.range) return null;
-    return {
-      left: normalizeShoulder(angles.left, this.range.left),
-      right: normalizeShoulder(angles.right, this.range.right),
-    };
+  read(frame: PoseFrame | null): ShoulderAngles | null {
+    return this.range ? measure(frame) : null;
   }
 }

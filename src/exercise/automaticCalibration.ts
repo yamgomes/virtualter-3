@@ -1,7 +1,8 @@
 import { createCalibration } from './shoulderMotion';
 import type { Calibration } from './shoulderMotion';
 
-export interface ShoulderValues { left: number; right: number }
+/** Ângulos projetados do ombro em graus. */
+export interface ShoulderAngles { left: number; right: number }
 export interface BilateralCalibration { left: Calibration; right: Calibration }
 export type CalibrationStage = 'rest' | 'maximum' | 'complete';
 export interface CalibrationProgress { stage: CalibrationStage; progress: number; message: string; result?: BilateralCalibration }
@@ -9,15 +10,15 @@ export interface CalibrationProgress { stage: CalibrationStage; progress: number
 /** Mede os dois ombros e usa a menor amplitude como limite comum. */
 export class AutomaticCalibration {
   private stage: CalibrationStage = 'rest';
-  private anchor: ShoulderValues | null = null;
+  private anchor: ShoulderAngles | null = null;
   private start: number | null = null;
   private lastTime: number | null = null;
-  private rest: ShoulderValues | null = null;
+  private rest: ShoulderAngles | null = null;
   private result: BilateralCalibration | undefined;
   private readonly holdTimeMs: number;
   private readonly toleranceDegrees: number;
   constructor(holdTimeMs = 1800, toleranceDegrees = 8) { this.holdTimeMs = holdTimeMs; this.toleranceDegrees = toleranceDegrees; }
-  update(angles: ShoulderValues | null, now: number): CalibrationProgress {
+  update(angles: ShoulderAngles | null, now: number): CalibrationProgress {
     if (this.stage === 'complete') return { stage: this.stage, progress: 1, message: 'Calibração concluída.', result: this.result };
     if (!angles || !Number.isFinite(angles.left) || !Number.isFinite(angles.right) || !Number.isFinite(now)) {
       this.resetHold(); return { stage: this.stage, progress: 0, message: 'Enquadre os dois ombros, cotovelos e quadris.' };
