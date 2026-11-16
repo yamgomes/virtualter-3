@@ -1,25 +1,17 @@
 import type { GameActivity, PreparationProgress } from '../contracts';
 import type { PoseFrame } from '../../tracking/types';
 import type { ShoulderConfig } from '../../session/types';
-import { AutomaticCalibration } from '../../exercise/automaticCalibration';
-import type { BilateralCalibration } from '../../exercise/automaticCalibration';
-import { shoulderAngle } from '../../exercise/shoulderMotion';
+import { ShoulderInput } from '../../exercise/shoulderInput';
 import { ShoulderSession } from './shoulderSession';
 
-function measure(frame: PoseFrame | null) {
-  const left = frame && shoulderAngle(frame, 'left'),
-    right = frame && shoulderAngle(frame, 'right');
-  return left !== null && right !== null ? { left, right } : null;
-}
 export class ShoulderActivity implements GameActivity {
-  readonly version = '1.0.0';
+  readonly version = '1.2.0';
   readonly instructions =
-    'Fique de frente para a câmera. Enquadre os dois ombros, cotovelos e quadris. Primeiro mantenha os braços em repouso; depois levante ambos até uma altura confortável.';
+    'Fique de frente para a câmera. Enquadre os dois ombros, cotovelos e quadris. Primeiro mantenha os braços em repouso. Depois levante cada braço até a altura máxima que conseguir confortavelmente.';
   readonly planDescription: string;
   readonly posture;
   private config: ShoulderConfig;
-  private calibrator = new AutomaticCalibration();
-  private calibration: BilateralCalibration | null = null;
+  private readonly input = new ShoulderInput();
   private session: ShoulderSession | null = null;
   constructor(config: ShoulderConfig) {
     this.config = config;
@@ -27,8 +19,7 @@ export class ShoulderActivity implements GameActivity {
     this.planDescription = `${config.repetitions} acertos mínimos · manter por ${config.holdMs / 1000} s · ${config.timeLimitMs / 1000} s por alvo.`;
   }
   calibrate(frame: PoseFrame | null, now: number): PreparationProgress {
-    const progress = this.calibrator.update(measure(frame), now);
-    if (progress.result) this.calibration = progress.result;
+    const progress = this.input.calibrate(frame, now);
     return {
       title:
         progress.stage === 'rest'
@@ -40,23 +31,17 @@ export class ShoulderActivity implements GameActivity {
     };
   }
   resetCalibration(): void {
-    this.calibrator = new AutomaticCalibration();
-    this.calibration = null;
+    this.input.reset();
   }
   start(stage: HTMLElement, panel: HTMLElement): void {
-    if (!this.calibration) throw new Error('Calibração necessária');
-    this.session = new ShoulderSession(
-      this.config,
-      this.calibration,
-      stage,
-      panel
-    );
+    if (!this.input.calibration) throw new Error('Calibração necessária');
+    this.session = new ShoulderSession(this.config, stage, panel);
   }
   update(frame: PoseFrame | null, now: number) {
-    const angles = measure(frame);
+    const levels = this.input.read(frame);
     return {
-      tracking: angles !== null,
-      completed: this.session?.update(angles, now) ?? false,
+      tracking: levels !== null,
+      completed: this.session?.update(levels, now) ?? false,
     };
   }
   render(now: number): void {
@@ -64,7 +49,17 @@ export class ShoulderActivity implements GameActivity {
   }
   result() {
     if (!this.session) throw new Error('Jogo não iniciado');
-    return this.session.result();
+    const calibration = this.input.calibration;
+    if (!calibration) throw new Error('Calibração necessária');
+    return {
+      ...this.session.result(),
+      calibration: {
+        leftRest: calibration.left.rest,
+        leftMaximum: calibration.left.maximum,
+        rightRest: calibration.right.rest,
+        rightMaximum: calibration.right.maximum,
+      },
+    };
   }
   dispose(): void {
     this.session?.dispose();

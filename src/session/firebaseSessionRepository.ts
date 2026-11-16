@@ -10,7 +10,7 @@ export function therapyPlan(patientId: string, revision: number, t: Therapy): Se
     tolerance: t.tolerancePercent / 100, sessionDurationMs: t.durationSeconds * 1000, pointsPerHit: t.pointsPerHit,
     posture: { mode: t.gameId === 'shoulder' ? 'front' as const : 'side' as const, tolerance: t.postureTolerancePercent / 100 } };
   const identity = { id: patientId, patientId, version: revision, displayName: 'Paciente', title: t.title, metrics: t.metrics, intensity: t.intensity };
-  return t.gameId === 'shoulder' ? { ...identity, gameId: 'shoulder', config: { ...config, targets: t.targets.split(',').map(pair => { const [left, right] = pair.split('/').map(Number); return { left: left / 100, right: right / 100 }; }) } }
+  return t.gameId === 'shoulder' ? { ...identity, gameId: 'shoulder', config }
     : { ...identity, gameId: 'surfing', config: { ...config, targets: t.targets.split(',').map(n => Number(n) / 100), side: t.side } };
 }
 

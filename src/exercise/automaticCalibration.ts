@@ -25,7 +25,7 @@ export class AutomaticCalibration {
     if (this.lastTime !== null && (now <= this.lastTime || now - this.lastTime > 500)) this.resetHold();
     this.lastTime = now;
     if (this.stage === 'maximum' && this.rest && (angles.left - this.rest.left < 15 || angles.right - this.rest.right < 15)) {
-      this.resetHold(); return { stage: this.stage, progress: 0, message: 'Levante os dois braços até uma altura confortável e mantenha.' };
+      this.resetHold(); return { stage: this.stage, progress: 0, message: 'Levante cada braço até sua altura máxima confortável e mantenha a posição.' };
     }
     if (!this.anchor || Math.abs(angles.left - this.anchor.left) > this.toleranceDegrees || Math.abs(angles.right - this.anchor.right) > this.toleranceDegrees) {
       this.anchor = { ...angles }; this.start = now;
@@ -34,7 +34,7 @@ export class AutomaticCalibration {
     if (progress < 1) return { stage: this.stage, progress, message: 'Mantenha os dois braços parados por um instante.' };
     if (this.stage === 'rest') {
       this.rest = { ...angles }; this.stage = 'maximum'; this.resetHold();
-      return { stage: this.stage, progress: 0, message: 'Agora levante os dois braços até uma altura confortável.' };
+      return { stage: this.stage, progress: 0, message: 'Agora levante cada braço até sua altura máxima confortável.' };
     }
     const left = createCalibration(this.rest!.left, angles.left), right = createCalibration(this.rest!.right, angles.right);
     if (!left || !right) { this.resetHold(); return { stage: this.stage, progress: 0, message: 'Não foi possível definir o alcance. Tente novamente.' }; }

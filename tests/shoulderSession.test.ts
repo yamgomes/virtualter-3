@@ -53,11 +53,6 @@ const plan: ShoulderConfig = {
   timeLimitMs: 1000,
   tolerance: 0.12,
 };
-const calibration = {
-  left: { rest: 0, maximum: 100 },
-  right: { rest: 0, maximum: 100 },
-};
-
 test('jogo monta e remove seus próprios recursos sem tocar na prévia', () => {
   const stage = new FakeElement(),
     panel = new FakeElement();
@@ -73,15 +68,14 @@ test('jogo monta e remove seus próprios recursos sem tocar na prévia', () => {
   };
   const session = new ShoulderSession(
     plan,
-    calibration,
     stage as unknown as HTMLElement,
     panel as unknown as HTMLElement,
     () => scene
   );
   assert.ok(stage.classes.has('shoulder-game-stage'));
   assert.ok(panel.classes.has('shoulder-game-ui'));
-  assert.equal(session.update({ left: 50, right: 50 }, 0), false);
-  assert.equal(session.update({ left: 50, right: 50 }, 100), true);
+  assert.equal(session.update({ left: 0.5, right: 0.5 }, 0), false);
+  assert.equal(session.update({ left: 0.5, right: 0.5 }, 100), true);
   assert.equal(session.hits, 1);
   assert.equal(rendered, 0);
   session.render(100);

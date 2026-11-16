@@ -1,9 +1,5 @@
 import './style.css';
-import { normalizeShoulder } from '../../exercise/shoulderMotion';
-import type {
-  BilateralCalibration,
-  ShoulderValues,
-} from '../../exercise/automaticCalibration';
+import type { ShoulderLevels } from '../../exercise/shoulderInput';
 import type { GameResult, ShoulderConfig } from '../../session/types';
 import { ShoulderGame } from './shoulderGame';
 import { ShoulderScene } from './shoulderScene';
@@ -16,21 +12,18 @@ type SceneFactory = (stage: HTMLElement) => GameScene;
 export class ShoulderSession {
   private game: ShoulderGame;
   private scene: GameScene;
-  private calibration: BilateralCalibration;
   private stage: HTMLElement;
   private panel: HTMLElement;
   private legend: HTMLElement;
-  private lastAngles: ShoulderValues | null = null;
+  private lastLevels: ShoulderLevels | null = null;
   private trackingLost = false;
   constructor(
     plan: ShoulderConfig,
-    calibration: BilateralCalibration,
     stage: HTMLElement,
     panel: HTMLElement,
     createScene: SceneFactory = (element) => new ShoulderScene(element)
   ) {
     this.game = new ShoulderGame(plan);
-    this.calibration = calibration;
     this.stage = stage;
     this.panel = panel;
     this.scene = createScene(stage);
@@ -59,25 +52,21 @@ export class ShoulderSession {
   get points(): number {
     return this.game.points;
   }
-  update(angles: ShoulderValues | null, now: number): boolean {
-    if (angles) {
-      this.lastAngles = angles;
-      const values = {
-        left: normalizeShoulder(angles.left, this.calibration.left),
-        right: normalizeShoulder(angles.right, this.calibration.right),
-      };
+  update(levels: ShoulderLevels | null, now: number): boolean {
+    if (levels) {
+      this.lastLevels = levels;
       for (const side of ['left', 'right'] as const) {
         this.field<HTMLProgressElement>(`progress-${side}`).value =
-          values[side];
+          levels[side];
         this.field(`level-${side}`).textContent =
-          Math.round(values[side] * 100) + '%';
+          Math.round(levels[side] * 100) + '%';
       }
       if (this.trackingLost) {
         this.field('feedback').textContent =
           'Rastreamento retomado. Complete a pose.';
         this.trackingLost = false;
       }
-      const events = this.game.update(values, now);
+      const events = this.game.update(levels, now);
       this.refresh();
       if (events.some((event) => event.type === 'hit'))
         this.field('feedback').textContent = 'Boa pose! Prepare a próxima.';
@@ -94,32 +83,16 @@ export class ShoulderSession {
     return false;
   }
   render(now: number): void {
-    if (!this.lastAngles) return;
-    const goalAngles = {
-      left:
-        this.calibration.left.rest +
-        (this.calibration.left.maximum - this.calibration.left.rest) *
-          this.game.target.left,
-      right:
-        this.calibration.right.rest +
-        (this.calibration.right.maximum - this.calibration.right.rest) *
-          this.game.target.right,
-    };
-    this.scene.update({ angles: this.lastAngles, goalAngles, now });
+    if (!this.lastLevels) return;
+    this.scene.update({ levels: this.lastLevels, target: this.game.target, now });
   }
-  result(): GameResult {
+  result(): Omit<GameResult, 'calibration'> {
     return {
       hits: this.hits,
       misses: this.game.completed - this.hits,
       points: this.points,
       plannedAttempts: this.game.config.repetitions,
       attempts: this.game.attempts,
-      calibration: {
-        leftRest: this.calibration.left.rest,
-        leftMaximum: this.calibration.left.maximum,
-        rightRest: this.calibration.right.rest,
-        rightMaximum: this.calibration.right.maximum,
-      },
     };
   }
   private refresh(): void {

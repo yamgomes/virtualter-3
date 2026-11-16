@@ -13,11 +13,6 @@ const plans: Record<string, SessionPlan> = {
     title: 'Semáforo',
     gameId: 'shoulder',
     config: {
-      targets: [
-        { left: 0.5, right: 0.5 },
-        { left: 0.8, right: 0.5 },
-        { left: 0.5, right: 0.8 },
-      ],
       sessionDurationMs: 60000,
       pointsPerHit: 10,
       repetitions: 6,
@@ -29,13 +24,9 @@ const plans: Record<string, SessionPlan> = {
   ASDF: {
     ...identity,
     id: 'ritmo-alternado',
-    title: 'Semáforo · poses alternadas',
+    title: 'Semáforo · menos tempo por alvo',
     gameId: 'shoulder',
     config: {
-      targets: [
-        { left: 0.4, right: 0.7 },
-        { left: 0.7, right: 0.4 },
-      ],
       sessionDurationMs: 60000,
       pointsPerHit: 10,
       repetitions: 4,
@@ -47,13 +38,9 @@ const plans: Record<string, SessionPlan> = {
   ZXCV: {
     ...identity,
     id: 'ritmo-livre',
-    title: 'Semáforo · sequência de poses',
+    title: 'Semáforo · mais repetições',
     gameId: 'shoulder',
     config: {
-      targets: [
-        { left: 0.4, right: 0.4 },
-        { left: 0.7, right: 0.7 },
-      ],
       sessionDurationMs: 60000,
       pointsPerHit: 10,
       repetitions: 8,

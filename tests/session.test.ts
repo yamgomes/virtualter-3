@@ -19,7 +19,8 @@ test('planos distintos, surfe de cada lado e cópias independentes', async () =>
     right = await repo.getPlanByCode('ASDF');
   assert.equal(left?.config.timeLimitMs, 6000);
   assert.equal(right?.config.timeLimitMs, 5000);
-  assert.notDeepEqual(left?.config.targets, right?.config.targets);
+  assert.equal(left?.config.targets, undefined);
+  assert.equal(right?.config.targets, undefined);
   assert.equal((await repo.getPlanByCode('zxcv'))?.config.repetitions, 8);
   assert.equal((await repo.getPlanByCode('SURF'))?.gameId, 'surfing');
   const wave = await repo.getPlanByCode('ONDA');
@@ -28,11 +29,8 @@ test('planos distintos, surfe de cada lado e cópias independentes', async () =>
   for (const code of ['QWE1', 'QWE', '__proto__', 'inexistente'])
     assert.equal(await repo.getPlanByCode(code), null);
   assert.ok(left?.gameId === 'shoulder');
-  left.config.targets[0].left = 0;
-  assert.deepEqual((await repo.getPlanByCode('QWER'))?.config.targets[0], {
-    left: 0.5,
-    right: 0.5,
-  });
+  left.config.timeLimitMs = 1000;
+  assert.equal((await repo.getPlanByCode('QWER'))?.config.timeLimitMs, 6000);
 });
 
 test('resultados isolados por jogador, ordenados e idempotentes', async () => {

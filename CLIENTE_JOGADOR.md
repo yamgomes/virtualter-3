@@ -41,7 +41,7 @@ Câmera → PoseSource → PoseBuffer / PoseFilter
 
 `GameActivity` é o coordenador privado de cada jogo: recebe frames, compõe sensores/calibração e encaminha controles normalizados às regras. Seu contrato expõe instruções, descrição do plano, calibração, início, atualização, renderização, resultado e descarte. Não obriga os jogos a compartilhar avatar, cena ou tecnologia gráfica.
 
-O jogo dos ombros mantém `ShoulderGame` como regra pura, `ShoulderSession` como coordenador de interface e `ShoulderScene` como apresentação Three.js. A cena recebe ângulos visuais prontos, sem recalcular calibração. O surfe usa `SurfGame` e uma cena Canvas 2D. Ambos escolhem reutilizar `TargetChallenge`, a mecânica de manter um alvo por um período. Jogos futuros podem implementar regras diferentes sem usar essa classe.
+No Semáforo, `ShoulderInput` mede os ângulos da câmera e converte a elevação de cada braço para um valor entre `0` e `1`. A sessão, as regras e a cena Three.js usam esses níveis. O personagem e os alvos percorrem o mesmo arco visual de 180 graus, da posição para baixo até a posição para cima. A atividade acrescenta os dados da calibração ao resultado para o histórico. O surfe usa `SurfGame` e uma cena Canvas 2D. Ambos reutilizam `TargetChallenge`, a mecânica de manter um alvo por um período.
 
 O detector atual é MediaPipe. Nomes de pontos e o contrato `PoseSource` isolam o restante do cliente dos índices e tipos do SDK. Os arquivos WASM são empacotados pelo Vite a partir da mesma versão instalada do SDK; o modelo ainda é carregado de um endereço externo. O cliente não é inteiramente offline.
 
@@ -59,7 +59,7 @@ Separar os ciclos não retira a inferência síncrona do MediaPipe da thread pri
 
 O painel do fisioterapeuta será desenvolvido no projeto separado `C:/Repo/homephysio-doc`. Este repositório mantém o cliente do jogador. A comunicação entre os projetos deverá ocorrer por contratos versionados e pelo backend Firebase; o painel não deverá importar componentes internos das cenas dos jogos.
 
-`SessionPlan` é uma união discriminada por `gameId`. Cada jogo tem sua configuração tipada: alvos bilaterais ou valores de inclinação, prazo, permanência, tolerância e, no surfe, lado observado. `version` identifica a versão do plano. `isSessionPlan` valida os dados na entrada; valores inválidos impedem iniciar a atividade.
+`SessionPlan` é uma união discriminada por `gameId`. No Semáforo, a calibração define o repouso (`0`) e a elevação máxima confortável (`1`) de cada braço. A cada tentativa, o jogo sorteia um valor nesse intervalo para cada lado. No Surfe, o plano define os alvos de inclinação e o lado observado. Os dois jogos recebem prazo, permanência e tolerância. `version` identifica a versão do plano. `isSessionPlan` valida os dados na entrada; valores inválidos impedem iniciar a atividade.
 
 O resultado v2 inclui ID estável, versão do jogo, cópia do plano, calibração utilizada, acertos, erros, pontos, resumo de cada tentativa concluída, tempo ativo/pausado/total e motivo de encerramento (`completed`, `stopped`, `error`). O total de tentativas pode ser menor que o planejado em uma sessão interrompida. A posição atual de uma tentativa incompleta não é persistida. Não são gravados vídeos ou séries contínuas de landmarks. Pontuação é lúdica, sem interpretação clínica.
 

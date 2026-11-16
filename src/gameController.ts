@@ -18,12 +18,18 @@ type Phase =
   | 'loading'
   | 'plan'
   | 'opening'
+  | 'preparation-error'
   | 'camera'
   | 'calibrating'
   | 'playing'
   | 'paused'
   | 'summary';
 type PosePreview = Pick<PoseOverlay, 'setVisible' | 'update' | 'dispose'>;
+
+function cameraCouldNotStart(error: unknown): boolean {
+  return error instanceof Error &&
+    (error.name === 'NotReadableError' || error.message === 'Could not start video source');
+}
 
 /** Hospeda qualquer atividade; não conhece articulações, regras ou cenas dos jogos. */
 export class GameController {
@@ -140,7 +146,15 @@ export class GameController {
           this.message(
             'Reconexão cancelada. Você pode tentar novamente ou encerrar.'
           );
+        else this.message('');
         this.update();
+      },
+      options
+    );
+    this.el('retry-camera').addEventListener(
+      'click',
+      () => {
+        if (this.phase === 'preparation-error') void this.openCamera(false);
       },
       options
     );
@@ -314,18 +328,31 @@ export class GameController {
     this.phase = 'opening';
     this.message('Preparando câmera e detector…');
     this.update();
-    let acquired: MediaStream | null = null;
+    let step: 'access' | 'camera' | 'detector' = 'access';
+    let failure = 'Não foi possível confirmar o acesso à sessão. Confira a conexão e tente novamente.';
     try {
-      if (this.repository.validateAccess && !(await this.repository.validateAccess(this.plan)))
-        throw Error('Código substituído ou terapia atualizada. Digite novamente o código fornecido pelo fisioterapeuta.');
+      if (this.repository.validateAccess && !(await this.repository.validateAccess(this.plan))) {
+        failure = 'O código ou a terapia mudou. Volte à atividade e use o código atual fornecido pelo fisioterapeuta.';
+        throw new Error(failure);
+      }
       if (generation !== this.cameraGeneration || this.disposed) return;
-      if (!navigator.mediaDevices?.getUserMedia)
-        throw new Error(
-          'Abra o aplicativo em localhost ou HTTPS para usar a câmera.'
-        );
-      acquired = await navigator.mediaDevices.getUserMedia({
+      step = 'camera';
+      failure = 'Não foi possível abrir a câmera. Confira se ela está conectada e tente novamente.';
+      if (!navigator.mediaDevices?.getUserMedia) {
+        failure = 'Abra o aplicativo em localhost ou HTTPS para usar a câmera.';
+        throw new Error(failure);
+      }
+      const mediaDevices = navigator.mediaDevices;
+      const acquired = await mediaDevices.getUserMedia({
         video: { facingMode: 'user' },
         audio: false,
+      }).catch((error: unknown) => {
+        if (!cameraCouldNotStart(error) || generation !== this.cameraGeneration || this.disposed)
+          throw error;
+        return mediaDevices.getUserMedia({
+          video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 15 } },
+          audio: false,
+        });
       });
       if (generation !== this.cameraGeneration || this.disposed) {
         acquired.getTracks().forEach((t) => t.stop());
@@ -335,6 +362,8 @@ export class GameController {
       this.video.srcObject = acquired;
       await this.video.play();
       if (generation !== this.cameraGeneration || this.disposed) return;
+      step = 'detector';
+      failure = 'Não foi possível carregar o detector de movimento. Confira a conexão e tente novamente.';
       await this.detector.initialize();
       if (generation !== this.cameraGeneration || this.disposed) return;
       this.el('camera-preview').style.aspectRatio =
@@ -365,14 +394,20 @@ export class GameController {
       if (!resume && !document.hidden) this.beginCalibration();
       void this.detect(generation);
     } catch (error) {
-      acquired?.getTracks().forEach((t) => t.stop());
       if (generation !== this.cameraGeneration || this.disposed) return;
+      console.error(`Falha na preparação da sessão (${step}):`, error);
+      if (step === 'camera' && error instanceof Error) {
+        if (cameraCouldNotStart(error))
+          failure = 'O navegador não conseguiu iniciar a câmera. Feche outros aplicativos ou abas que estejam usando a câmera e tente novamente.';
+        else if (error.name === 'NotAllowedError' || error.name === 'SecurityError')
+          failure = 'Permita o acesso à câmera nas configurações do navegador e tente novamente.';
+        else if (error.name === 'NotFoundError')
+          failure = 'Nenhuma câmera foi encontrada. Conecte uma câmera e tente novamente.';
+      }
       this.stopCamera();
-      this.phase = resume ? 'paused' : 'plan';
+      this.phase = resume ? 'paused' : 'preparation-error';
+      this.message(failure);
       this.update();
-      this.message(
-        `Não foi possível iniciar a câmera. ${error instanceof Error ? error.message : 'Tente novamente.'}`
-      );
     }
   }
   private beginCalibration(): void {

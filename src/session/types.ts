@@ -1,8 +1,7 @@
-import type { ShoulderValues } from '../exercise/automaticCalibration';
+import type { ShoulderLevels } from '../exercise/shoulderInput';
 import type { PostureRequirement } from '../tracking/posture';
 
-export interface ChallengeConfig<T> {
-  targets: T[];
+export interface ChallengeConfig {
   repetitions: number;
   holdMs: number;
   timeLimitMs: number;
@@ -12,8 +11,12 @@ export interface ChallengeConfig<T> {
   pointsPerHit?: number;
   posture?: PostureRequirement;
 }
-export type ShoulderConfig = ChallengeConfig<ShoulderValues>;
-export interface SurfConfig extends ChallengeConfig<number> {
+export interface ShoulderConfig extends ChallengeConfig {
+  /** Planos antigos podem registrar uma sequência fixa. */
+  targets?: ShoulderLevels[];
+}
+export interface SurfConfig extends ChallengeConfig {
+  targets: number[];
   side: 'left' | 'right';
 }
 interface PlanIdentity {
@@ -105,9 +108,6 @@ export function isSessionPlan(value: unknown): value is SessionPlan {
   )
     return false;
   if (
-    !Array.isArray(c.targets) ||
-    !c.targets.length ||
-    c.targets.length > 1000 ||
     !count(c.repetitions) ||
     c.repetitions < 1 ||
     c.repetitions > 1000 ||
@@ -121,6 +121,9 @@ export function isSessionPlan(value: unknown): value is SessionPlan {
     c.tolerance <= 0 ||
     c.tolerance > 0.5
   )
+    return false;
+  if (value.gameId === 'shoulder' && c.targets === undefined) return true;
+  if (!Array.isArray(c.targets) || !c.targets.length || c.targets.length > 1000)
     return false;
   if (value.gameId === 'shoulder')
     return c.targets.every((t) => object(t) && level(t.left) && level(t.right));

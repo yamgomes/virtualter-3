@@ -1,6 +1,6 @@
 import type { AttemptResult } from '../session/types';
 export interface TargetConfig<T> {
-  targets: readonly T[];
+  targets?: readonly T[];
   repetitions: number;
   holdMs: number;
   timeLimitMs: number;
@@ -28,14 +28,17 @@ export class TargetChallenge<T> {
   private history: AttemptResult[] = [];
   private matches: (value: T, target: T, tolerance: number) => boolean;
   private valid: (value: T) => boolean;
+  private readonly selectTarget: (index: number) => T;
+  private currentTarget: T;
   constructor(
     config: TargetConfig<T>,
     valid: (value: T) => boolean,
-    matches: (value: T, target: T, tolerance: number) => boolean
+    matches: (value: T, target: T, tolerance: number) => boolean,
+    generateTarget?: () => T
   ) {
+    const targets = config.targets;
     if (
-      !config.targets.length ||
-      !config.targets.every(valid) ||
+      (targets ? !targets.length || !targets.every(valid) : !generateTarget) ||
       !Number.isInteger(config.repetitions) ||
       config.repetitions < 1 ||
       !Number.isFinite(config.holdMs) ||
@@ -53,9 +56,14 @@ export class TargetChallenge<T> {
     this.tolerance = config.tolerance ?? 0.12;
     this.valid = valid;
     this.matches = matches;
+    const fixedTargets = this.config.targets;
+    this.selectTarget = fixedTargets
+      ? (index) => fixedTargets[index % fixedTargets.length]
+      : generateTarget!;
+    this.currentTarget = this.selectTarget(0);
   }
   get target(): T {
-    return this.config.targets[this.completed % this.config.targets.length];
+    return this.currentTarget;
   }
   get completed(): number {
     return this.history.length;
@@ -149,6 +157,12 @@ export class TargetChallenge<T> {
       expired ||
       (this.config.sessionDurationMs === undefined &&
         this.completed === this.config.repetitions);
+    if (!this.finished) {
+      this.currentTarget = this.selectTarget(this.completed);
+      if (!this.config.targets) {
+        this.requiresExit = success && this.matches(value, this.target, this.tolerance);
+      }
+    }
     return this.finished ? [event, { ...event, type: 'completed' }] : [event];
   }
 }

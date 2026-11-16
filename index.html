@@ -82,6 +82,11 @@
               aguarda.
             </p>
           </div>
+          <div data-phase="preparation-error" hidden>
+            <p class="eyebrow">PREPARAÇÃO</p>
+            <h1>Não foi possível preparar a sessão.</h1>
+            <button id="retry-camera">Tentar novamente</button>
+          </div>
           <div data-phase="camera" hidden>
             <p class="eyebrow">PREPARAÇÃO</p>
             <h1>Vamos ajustar a câmera.</h1>
@@ -144,7 +149,7 @@
           <button
             class="secondary cancel"
             id="cancel"
-            data-phase="opening camera calibrating"
+            data-phase="opening preparation-error camera calibrating"
             hidden
           >
             Cancelar preparação
