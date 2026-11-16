@@ -3,7 +3,7 @@ import { AutomaticCalibration } from './automaticCalibration';
 import type { BilateralCalibration } from './automaticCalibration';
 import { normalizeShoulder, shoulderAngle } from './shoulderMotion';
 
-/** Elevação de cada braço em [0, 1]. Zero é repouso e um é elevação completa. */
+/** Elevação de cada braço em [0, 1], do repouso até o limite comum. */
 export interface ShoulderLevels {
   left: number;
   right: number;

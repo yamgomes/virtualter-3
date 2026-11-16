@@ -5,7 +5,7 @@ import { ShoulderInput } from '../../exercise/shoulderInput';
 import { ShoulderSession } from './shoulderSession';
 
 export class ShoulderActivity implements GameActivity {
-  readonly version = '1.2.0';
+  readonly version = '1.3.0';
   readonly instructions =
     'Fique de frente para a câmera. Enquadre os dois ombros, cotovelos e quadris. Primeiro mantenha os braços em repouso. Depois levante cada braço até a altura máxima que conseguir confortavelmente.';
   readonly planDescription: string;

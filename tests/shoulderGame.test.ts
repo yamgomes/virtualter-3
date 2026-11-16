@@ -15,14 +15,15 @@ test('ângulo projetado, ausência de pontos e calibração', () => {
   const calibration = createCalibration(20, 100)!;
   assert.equal(normalizeShoulder(60, calibration), 0.5); assert.equal(normalizeShoulder(200, calibration), 1);
 });
-test('calibra ambos automaticamente e exige movimento em cada braço', () => {
+test('calibra os dois braços com a menor amplitude medida a partir de cada repouso', () => {
   const calibration = new AutomaticCalibration(600);
   calibration.update({ left: 10, right: 15 }, 0); calibration.update({ left: 10, right: 15 }, 300);
   assert.equal(calibration.update({ left: 10, right: 15 }, 600).stage, 'maximum');
   assert.equal(calibration.update({ left: 50, right: 20 }, 900).progress, 0);
   calibration.update({ left: 50, right: 65 }, 1200); calibration.update({ left: 50, right: 65 }, 1500);
   const result = calibration.update({ left: 50, right: 65 }, 1800);
-  assert.equal(result.stage, 'complete'); assert.deepEqual(result.result, { left: { rest: 10, maximum: 50 }, right: { rest: 15, maximum: 65 } });
+  assert.equal(result.stage, 'complete');
+  assert.deepEqual(result.result, { left: { rest: 10, maximum: 50 }, right: { rest: 15, maximum: 55 } });
 });
 test('perda de rastreamento e movimento interrompem a calibração estável', () => {
   const calibration = new AutomaticCalibration(600);
