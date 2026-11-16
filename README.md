@@ -1,80 +1,32 @@
-# Nome Temporário - Estrutura do Código
+# Virtualter — cliente de exergames
 
-## Organização dos Arquivo
+Cliente web em TypeScript para executar atividades com movimentos capturados pela câmera. O jogo Semáforo controla dois braços; o surfe controla a posição de um personagem pela inclinação do tronco em vista lateral. Cada jogo possui preparação, regras e apresentação próprias.
 
-### 📁 Estrutura de Arquivos
+## Executar
 
-```
-src/
-├── main.ts              # Ponto de entrada - apenas inicializa o GameController
-├── gameController.ts    # Controlador principal do jogo - coordena todos os módulos
-├── gameState.ts         # Gerenciamento de estados do jogo
-├── uiManager.ts         # Gerenciamento de elementos de UI (overlays, barras)
-├── sceneManager.ts      # Gerenciamento da cena Three.js e renderização
-├── poseDetector.ts      # Detecção de poses com MediaPipe
-├── videoManager.ts      # Gerenciamento da câmera/vídeo
-├── constants.ts         # Constantes centralizadas do jogo
-├── obstaculos.ts        # Lista de obstáculos (não modificado)
-└── style.css           # Estilos CSS
+```sh
+npm install
+npm run dev
 ```
 
-### 🔧 Módulos e Responsabilidades
+Códigos fictícios: **QWER**, **ASDF** e **ZXCV** para ombros; **SURF** para surfe com o lado esquerdo voltado à câmera; **ONDA** para surfe com o lado direito. Siga o enquadramento exibido antes de calibrar.
 
-#### **GameController** (`gameController.ts`)
-- **Responsabilidade**: Orquestração principal do jogo
-- **Funções**: Coordena todos os outros módulos, gerencia o loop do jogo, lida com a lógica de transição de estados
-
-#### **GameStateManager** (`gameState.ts`)
-- **Responsabilidade**: Gerenciamento de estados do jogo
-- **Funções**: Controla estados (WaitingToStart, Playing), atualiza cabeçalho com informações
-
-#### **UIManager** (`uiManager.ts`)
-- **Responsabilidade**: Elementos de interface do usuário
-- **Funções**: Cria e gerencia overlays (mensagem de início, barra de progresso T-pose)
-
-#### **SceneManager** (`sceneManager.ts`)
-- **Responsabilidade**: Cena 3D e renderização
-- **Funções**: Configura Three.js, gerencia câmera/renderer, background de vídeo, cubo que segue a mão
-
-#### **PoseDetector** (`poseDetector.ts`)
-- **Responsabilidade**: Detecção de poses corporais
-- **Funções**: Inicializa MediaPipe, detecta T-pose, calcula posição da mão
-
-#### **VideoManager** (`videoManager.ts`)
-- **Responsabilidade**: Acesso à câmera
-- **Funções**: Configura elemento de vídeo, solicita permissão da câmera
-
-#### **Constants** (`constants.ts`)
-- **Responsabilidade**: Configurações centralizadas
-- **Funções**: Define constantes do jogo (tempos, thresholds, escalas)
-
-### 🎯 Benefícios da Nova Estrutura
-
-1. **Separação de Responsabilidades**: Cada classe tem uma função específica
-2. **Redução de Repetição**: Código duplicado foi eliminado
-3. **Facilidade de Manutenção**: Mudanças em uma área não afetam outras
-4. **Testabilidade**: Cada módulo pode ser testado independentemente
-5. **Escalabilidade**: Fácil adicionar novas funcionalidades
-6. **Configuração Centralizada**: Constantes em um só lugar
-
-### 🚀 Como Usar
-
-O jogo é iniciado simplesmente importando e instanciando o `GameController`:
-
-```typescript
-import { GameController } from "./gameController";
-
-// Inicializa o jogo
-new GameController();
+```sh
+npm run typecheck
+npm test
+npm run build
 ```
 
-### 🛠️ Modificações Futuras
+Os dados permanecem neste navegador. Não há Firebase ou autenticação implantados. O detector processa o vídeo localmente, mas ainda baixa o modelo de pose pela internet. As medidas são projeções 2D e o protótipo não foi validado clinicamente.
 
-Para adicionar novas funcionalidades:
+## Arquitetura ativa
 
-1. **Novos Estados**: Edite `gameState.ts`
-2. **Novos Elementos UI**: Adicione métodos em `uiManager.ts`
-3. **Novos Objetos 3D**: Modifique `sceneManager.ts`
-4. **Novas Detecções**: Estenda `poseDetector.ts`
-5. **Novas Configurações**: Adicione em `constants.ts`
-> **Fluxo atual do cliente:** consulte [CLIENTE_JOGADOR.md](./CLIENTE_JOGADOR.md) para a arquitetura ativa, instruções de execução e distinção entre o jogo dos ombros e os protótipos anteriores. A estrutura descrita neste README é histórica.
+- `src/tracking/`: fonte de pose, filtro e validade temporal das amostras.
+- `src/exercise/`: medidas e calibração de movimentos, independentes da apresentação.
+- `src/games/`: contrato de atividade, composição dos jogos e apresentações próprias.
+- `src/session/`: planos e resultados validados, relógio e fila de reenvio.
+- `src/gameController.ts`: ciclo de vida da aplicação, câmera, pausa e persistência.
+- `src/main.ts`: composição das dependências.
+- `legacy/`: protótipos anteriores, preservados fora do build ativo.
+
+Veja [CLIENTE_JOGADOR.md](CLIENTE_JOGADOR.md) para contratos, extensão do cliente, testes no navegador e limites atuais.

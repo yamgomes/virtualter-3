@@ -1,0 +1,12 @@
+.video-wrap.surf-stage video,
+.surf-stage .camera-label {
+  visibility: hidden;
+}
+.video-wrap canvas.surf-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 1;
+  z-index: 1;
+}

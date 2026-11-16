@@ -1,0 +1,67 @@
+rules_version = '2';
+// professionals/{uid}/patients/{id}: cadastro privado, terapia, código e revisão.
+// patientAccess/{code}: projeção da terapia sem nome ou dados de contato.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function verified() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+    function uid(value) {
+      return value is string && value.size() > 0 && value.size() <= 128 && value.matches('^[A-Za-z0-9_-]+$');
+    }
+    function owner(id) { return verified() && request.auth.uid == id; }
+    function code(value) { return value is string && value.matches('^[235789BCDEFHJKMNPQRSTUVWXYZ]{6}$'); }
+    function issuedCode(value) { return value.matches('^[2-9A-HJ-NP-Z]{6}$'); }
+    function bounded(value, min, max) { return value is number && value >= min && value <= max; }
+    function label(value) { return value is string && value.size() > 0 && value.size() <= 120; }
+    function therapy(t) {
+      let n = '(100|[0-9]{1,2}([.][0-9]{1,2})?)';
+      return t is map && t.keys().hasOnly(['gameId','title','intensity','metrics','targets','durationSeconds','repetitions','holdSeconds','targetSeconds','tolerancePercent','postureTolerancePercent','pointsPerHit','side'])
+        && label(t.title) && t.gameId in ['shoulder','surfing'] && t.side in ['left','right']
+        && t.intensity in ['low','moderate','high','custom'] && t.metrics is list && t.metrics.size() >= 1 && t.metrics.size() <= 5
+        && t.metrics.hasOnly(['hits','misses','points','activeMs','pausedMs']) && t.metrics.toSet().size() == t.metrics.size()
+        && t.targets is string && t.targets.size() <= 500
+        && (t.gameId == 'shoulder' ? t.targets.matches('^'+n+'/'+n+'(,'+n+'/'+n+')*$') : t.targets.matches('^'+n+'(,'+n+')*$'))
+        && bounded(t.durationSeconds,1,3600) && t.repetitions is int && bounded(t.repetitions,1,1000)
+        && bounded(t.targetSeconds,0.1,3600) && bounded(t.holdSeconds,0,t.targetSeconds)
+        && bounded(t.tolerancePercent,1,50) && bounded(t.postureTolerancePercent,0,100)
+        && t.pointsPerHit is int && bounded(t.pointsPerHit,0,1000);
+    }
+    function patient(d) {
+      return d.keys().hasOnly(['name','code','therapy','revision','createdAt','updatedAt']) && label(d.name)
+        && d.revision is int && d.createdAt is timestamp && d.updatedAt == request.time;
+    }
+    function matchesAccess(d, professional, id) {
+      let a = getAfter(/databases/$(database)/documents/patientAccess/$(d.code)).data;
+      return a.ownerId == professional && a.patientId == id && a.therapy == d.therapy && a.revision == d.revision;
+    }
+    match /professionals/{professional}/patients/{id} {
+      allow get: if owner(professional);
+      allow list: if owner(professional) && request.query.limit <= 100;
+      allow create: if owner(professional) && patient(request.resource.data) && uid(id)
+        && request.resource.data.createdAt == request.time && request.resource.data.code == ''
+        && request.resource.data.therapy == null && request.resource.data.revision == 0;
+      allow update: if owner(professional) && patient(request.resource.data)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['code','therapy','revision','updatedAt'])
+        && request.resource.data.revision == resource.data.revision + 1
+        && therapy(request.resource.data.therapy) && code(request.resource.data.code)
+        && matchesAccess(request.resource.data, professional, id)
+        && (resource.data.code == '' || resource.data.code == request.resource.data.code
+          || getAfter(/databases/$(database)/documents/patientAccess/$(resource.data.code)).data.revoked == true);
+    }
+    function validAccess(d, token) {
+      let p = getAfter(/databases/$(database)/documents/professionals/$(d.ownerId)/patients/$(d.patientId)).data;
+      return d.keys().hasOnly(['ownerId','patientId','therapy','revision']) && uid(d.patientId) && code(token)
+        && p.code == token && p.therapy == d.therapy && p.revision == d.revision;
+    }
+    match /patientAccess/{token} {
+      allow get: if issuedCode(token) && (verified() || (resource != null && resource.data.get('revoked', false) == false));
+      allow create: if owner(request.resource.data.ownerId) && validAccess(request.resource.data, token);
+      allow update: if owner(resource.data.ownerId) && resource.data.get('revoked', false) == false && (
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['therapy','revision']) && validAccess(request.resource.data, token))
+        || (request.resource.data == {'revoked': true}
+          && getAfter(/databases/$(database)/documents/professionals/$(resource.data.ownerId)/patients/$(resource.data.patientId)).data.code != token));
+    }
+    match /{document=**} { allow read, write: if false; }
+  }
+}

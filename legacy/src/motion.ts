@@ -1,4 +1,4 @@
-import { OneEuroFilter } from './filter/oneEuroFilter';
+import { OneEuroFilter } from '../../src/filter/oneEuroFilter';
 
 export type Point = { x: number; y: number; visibility?: number };
 export type Side = 'left' | 'right';

@@ -1,0 +1,14 @@
+{
+  "hosting": {
+    "site": "homephysio-virtualter",
+    "public": "auth-hosting",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"]
+  },
+  "auth": { "providers": { "emailPassword": true } },
+  "firestore": {
+    "database": "(default)",
+    "location": "southamerica-east1",
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  }
+}
