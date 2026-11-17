@@ -23,7 +23,9 @@ type Phase =
   | 'calibrating'
   | 'playing'
   | 'paused'
+  | 'resuming'
   | 'summary';
+const RESUME_COUNTDOWN_MS = 3000;
 type PosePreview = Pick<PoseOverlay, 'setVisible' | 'update' | 'dispose'>;
 
 function cameraCouldNotStart(error: unknown): boolean {
@@ -57,6 +59,7 @@ export class GameController {
   private accessCheckPending = false;
   private animationTime = 0;
   private previousRender = 0;
+  private resumeAt = 0;
   private audio: AudioContext | null = null;
   private lastHits = 0;
   private postureMonitor: PostureMonitor | null = null;
@@ -187,8 +190,10 @@ export class GameController {
         this.poses.reset();
         this.filter.reset();
         this.tracking = false;
-        this.phase = 'playing';
-        this.message('Aguardando um novo movimento…');
+        this.resumeAt = performance.now() + RESUME_COUNTDOWN_MS;
+        this.el('resume-countdown-number').textContent = '3';
+        this.phase = 'resuming';
+        this.message('');
         this.update();
       },
       options
@@ -223,7 +228,7 @@ export class GameController {
           if (this.phase === 'camera' && this.stream) this.beginCalibration();
           return;
         }
-        if (this.phase === 'playing')
+        if (this.phase === 'playing' || this.phase === 'resuming')
           this.pause(
             'Sessão pausada porque você saiu desta aba. Retome quando estiver pronto.'
           );
@@ -238,7 +243,7 @@ export class GameController {
     window.addEventListener(
       'pagehide',
       () => {
-        if (this.phase === 'playing') this.pause('Sessão pausada.');
+        this.pause('Sessão pausada.');
       },
       options
     );
@@ -447,7 +452,7 @@ export class GameController {
       try {
         if (
           !document.hidden &&
-          (['camera', 'calibrating', 'playing'].includes(this.phase) ||
+          (['camera', 'calibrating', 'playing', 'resuming'].includes(this.phase) ||
             (this.phase === 'paused' && !!this.postureMonitor))
         ) {
           const raw = await this.detector.detect();
@@ -458,7 +463,7 @@ export class GameController {
             let invalidCalibrationPosture = false;
             if (
               this.postureMonitor &&
-              ['calibrating', 'playing', 'paused'].includes(this.phase)
+              ['calibrating', 'playing', 'paused', 'resuming'].includes(this.phase)
             ) {
               const posture = this.postureMonitor.update(
                 frame,
@@ -468,7 +473,7 @@ export class GameController {
               warning.textContent =
                 posture.state === 'valid' ? '' : posture.message;
               warning.dataset.state = posture.state;
-              if (this.phase === 'playing' && posture.state === 'invalid') {
+              if ((this.phase === 'playing' || this.phase === 'resuming') && posture.state === 'invalid') {
                 this.pause('Sessão pausada para ajustar sua posição.');
                 this.posturePause = true;
                 this.postureBlocked = true;
@@ -564,6 +569,7 @@ export class GameController {
   }
   private render(now: number): void {
     if (this.disposed) return;
+    if (this.phase === 'resuming') this.updateResumeCountdown(now);
     if (this.repository.validateAccess && this.plan && ['playing', 'calibrating'].includes(this.phase) && !this.accessCheckPending && now - this.accessCheckAt >= 30000) {
       this.accessCheckAt = now;
       this.accessCheckPending = true;
@@ -597,7 +603,7 @@ export class GameController {
       }
     }
     this.clock?.tick(now, this.phase === 'playing' && this.tracking);
-    if (['playing', 'paused'].includes(this.phase)) {
+    if (['playing', 'paused', 'resuming'].includes(this.phase)) {
       if (this.phase === 'playing')
         this.animationTime += Math.min(
           100,
@@ -613,8 +619,22 @@ export class GameController {
     this.previousRender = now;
     this.raf = requestAnimationFrame((t) => this.render(t));
   }
+  private updateResumeCountdown(now: number): void {
+    const remaining = Math.ceil((this.resumeAt - now) / 1000);
+    if (remaining > 0) {
+      const number = this.el('resume-countdown-number');
+      if (number.textContent !== String(remaining)) number.textContent = String(remaining);
+      return;
+    }
+    if (!this.poses.read(now)) {
+      this.pause('Movimento não detectado. Confira seu enquadramento e tente retomar.');
+      return;
+    }
+    this.phase = 'playing';
+    this.update();
+  }
   private pause(message: string): void {
-    if (this.phase !== 'playing') return;
+    if (this.phase !== 'playing' && this.phase !== 'resuming') return;
     const now = performance.now();
     this.clock?.tick(now, false);
     this.activity?.update(null, now);
@@ -629,7 +649,7 @@ export class GameController {
       !this.plan ||
       !this.activity ||
       !this.clock ||
-      !['playing', 'paused'].includes(this.phase)
+      !['playing', 'paused', 'resuming'].includes(this.phase)
     )
       return;
     this.clock.tick(
@@ -735,7 +755,7 @@ export class GameController {
   private update(): void {
     document.body.classList.toggle(
       'camera-active',
-      ['opening', 'camera', 'calibrating', 'playing', 'paused'].includes(
+      ['opening', 'camera', 'calibrating', 'playing', 'paused', 'resuming'].includes(
         this.phase
       )
     );

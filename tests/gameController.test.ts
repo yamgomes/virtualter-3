@@ -55,7 +55,8 @@ function setup(withPosture = false) {
     stopped = 0,
     initialized = 0,
     complete = false,
-    rendered = 0;
+    rendered = 0,
+    trackedUpdates = 0;
   const callbacks = new Map<number, FrameRequestCallback>();
   const elements = new Map<string, ElementStub>();
   for (const match of readFileSync('index.html', 'utf8').matchAll(
@@ -134,6 +135,7 @@ function setup(withPosture = false) {
     resetCalibration() {},
     start() {},
     update(frame) {
+      if (frame) trackedUpdates++;
       return { tracking: !!frame, completed: complete };
     },
     render() {
@@ -200,6 +202,7 @@ function setup(withPosture = false) {
       complete = true;
     },
     getRendered: () => rendered,
+    getTrackedUpdates: () => trackedUpdates,
     setShoulderWidth: (width: number) => { shoulderWidth = width; },
   };
 }
@@ -237,9 +240,18 @@ test('câmera, preparação própria, pausa, tempo ativo e encerramento manual',
   await env.step(300);
   env.click('pause');
   await env.step(1000);
+  const updatesAtPause = env.getTrackedUpdates();
   env.click('resume');
-  await env.step(1100);
-  await env.step(1200);
+  const countdown = env.elements.get('resume-countdown-number')!;
+  assert.equal(countdown.textContent, '3');
+  for (let time = 1100; time <= 2000; time += 100) await env.step(time);
+  assert.equal(countdown.textContent, '2');
+  for (let time = 2100; time <= 3900; time += 100) await env.step(time);
+  assert.equal(countdown.textContent, '1');
+  assert.equal(env.getTrackedUpdates(), updatesAtPause);
+  await env.step(4000);
+  await env.step(4100);
+  assert.ok(env.getTrackedUpdates() > updatesAtPause);
   env.click('finish');
   await wait();
   assert.equal(env.saved.length, 1);

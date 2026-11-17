@@ -40,13 +40,15 @@
                   spellcheck="false"
                   title="Digite o código fornecido pelo fisioterapeuta"
                   required
-                  placeholder="Código fornecido pelo fisioterapeuta"
+                  placeholder="Exemplo: BH5KN3"
                 /><button id="access-plan" type="submit">
                   Acessar <span>→</span>
                 </button>
               </div>
             </form>
-            <button id="try-goalkeeper" class="text-button" type="button">Experimentar o goleiro</button>
+            <button id="try-goalkeeper" class="text-button" type="button">
+              Experimentar o goleiro
+            </button>
 
             <p class="fine">
               O vídeo é processado neste dispositivo. O detector precisa de
@@ -108,7 +110,7 @@
               aria-label="Progresso da calibração automática"
             ></progress>
           </div>
-          <div id="game-ui" data-phase="playing paused" hidden></div>
+          <div id="game-ui" data-phase="playing paused resuming" hidden></div>
           <div data-phase="playing" hidden>
             <button id="pause" class="secondary">Pausar sessão</button>
           </div>
@@ -121,14 +123,14 @@
           <button
             id="finish"
             class="text-button"
-            data-phase="playing paused"
+            data-phase="playing paused resuming"
             hidden
           >
             Encerrar sessão
           </button>
           <p
             id="posture-status"
-            data-phase="calibrating playing paused"
+            data-phase="calibrating playing paused resuming"
             role="status"
             aria-live="polite"
             hidden
@@ -168,7 +170,7 @@
           </div>
           <div
             class="stage-heading"
-            data-phase="camera calibrating playing paused"
+            data-phase="camera calibrating playing paused resuming"
             hidden
           >
             <span>VIRTUALTER · ÁREA DE JOGO</span
@@ -177,11 +179,21 @@
           <div
             id="camera-preview"
             class="video-wrap"
-            data-phase="camera calibrating playing paused"
+            data-phase="camera calibrating playing paused resuming"
             hidden
           >
             <video id="camera" autoplay muted playsinline></video
             ><span class="camera-label">CÂMERA AO VIVO</span>
+            <div
+              class="resume-countdown"
+              data-phase="resuming"
+              role="status"
+              aria-atomic="true"
+              hidden
+            >
+              <span>Retomando em</span>
+              <strong id="resume-countdown-number">3</strong>
+            </div>
           </div>
         </aside>
       </section>
@@ -189,5 +201,3 @@
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
-
-

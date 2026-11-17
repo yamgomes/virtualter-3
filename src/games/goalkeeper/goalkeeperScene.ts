@@ -6,11 +6,25 @@ import goalUrl from '../../../assets/models/football_gates.glb?url';
 import ballUrl from '../../../assets/models/low_poly_footballsoccer_ball.glb?url';
 import gloveUrl from '../../../assets/models/low_poly_gloved_hand.glb?url';
 import type { ShoulderAngles } from '../../exercise/automaticCalibration';
+import type { Side } from '../../exercise/shoulderMotion';
 import { avatarArm } from '../shoulder/avatarPose';
 import type { Shot } from './goalkeeperGame';
 
 const SIDES = ['left', 'right'] as const;
 const GROUND = -0.44;
+const PLAYER_HEIGHT = 0.95;
+// A linha dos ombros da camisa fica a cerca de 79% da altura do modelo.
+const SHOULDER_HEIGHT = GROUND + PLAYER_HEIGHT * 0.79;
+const GOAL_HEIGHT = 1.24;
+
+function glovePose(side: Side, degrees: number) {
+  const { shoulder, elbow, hand } = avatarArm(side, degrees);
+  return {
+    x: hand[0],
+    y: SHOULDER_HEIGHT + hand[1] - shoulder[1],
+    rotation: Math.atan2(hand[1] - elbow[1], hand[0] - elbow[0]) - Math.PI / 2,
+  };
+}
 
 function mesh(geometry: THREE.BufferGeometry, color: number) {
   return new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ color }));
@@ -84,12 +98,12 @@ export class GoalkeeperScene {
     fill.position.set(-2, 1, 2);
     this.scene.add(new THREE.HemisphereLight(0xe1f1ff, 0x9cb49d, 2), light, fill);
 
-    const post = mesh(new THREE.BoxGeometry(0.026, 0.99, 0.035), 0xffffff);
-    post.position.set(-0.84, 0.49, 0);
+    const post = mesh(new THREE.BoxGeometry(0.026, GOAL_HEIGHT, 0.035), 0xffffff);
+    post.position.set(-0.84, GOAL_HEIGHT / 2, 0);
     const rightPost = post.clone();
     rightPost.position.x = 0.84;
     const crossbar = mesh(new THREE.BoxGeometry(1.7, 0.028, 0.035), 0xffffff);
-    crossbar.position.y = 0.99;
+    crossbar.position.y = GOAL_HEIGHT;
     this.goal.add(post, rightPost, crossbar);
     this.goal.position.set(0, GROUND, -0.3);
 
@@ -106,7 +120,7 @@ export class GoalkeeperScene {
     this.ball.visible = this.marker.visible = false;
 
     void this.load(goalUrl, (model) => this.replace(this.goal, fit(model, 'x', 1.7, true)));
-    void this.load(playerUrl, (model) => this.replace(this.player, fit(model, 'y', 0.95, true)));
+    void this.load(playerUrl, (model) => this.replace(this.player, fit(model, 'y', PLAYER_HEIGHT, true)));
     void this.load(ballUrl, (model) => this.replace(this.ball, fit(model, 'y', 0.104)));
     void this.load(gloveUrl, (model) => {
       const mirrored = fit(clone(model), 'y', 0.15);
@@ -140,7 +154,7 @@ export class GoalkeeperScene {
     const width = this.stage.clientWidth || 1;
     const height = this.stage.clientHeight || 1;
     const aspect = width / height;
-    const viewHeight = Math.max(1.28, 1.96 / aspect);
+    const viewHeight = Math.max(1.52, 1.96 / aspect);
     this.camera.left = -viewHeight * aspect / 2;
     this.camera.right = viewHeight * aspect / 2;
     this.camera.top = viewHeight / 2;
@@ -151,14 +165,14 @@ export class GoalkeeperScene {
 
   render(angles: ShoulderAngles, shot: Shot | null, progress: number, now: number): void {
     for (const side of SIDES) {
-      const pose = avatarArm(side, angles[side]);
+      const pose = glovePose(side, angles[side]);
       const glove = this.gloves[side];
-      glove.position.set(...pose.hand, 0.02);
-      glove.rotation.z = Math.atan2(pose.hand[1] - pose.elbow[1], pose.hand[0] - pose.elbow[0]) - Math.PI / 2;
+      glove.position.set(pose.x, pose.y, 0.02);
+      glove.rotation.z = pose.rotation;
     }
     this.ball.visible = this.marker.visible = shot !== null;
     if (shot) {
-      const [x, y] = avatarArm(shot.side, shot.degrees).hand;
+      const { x, y } = glovePose(shot.side, shot.degrees);
       this.marker.position.set(x, y, -0.015);
       this.marker.scale.setScalar(1 + (1 - progress) * 0.32);
       this.ball.position.set(x * progress, THREE.MathUtils.lerp(0.52, y, progress), 1 - progress);
