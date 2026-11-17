@@ -60,13 +60,20 @@ export class ResultOutbox {
   }
   async flush(repository: SessionRepository, patientId: string): Promise<void> {
     const run = async () => {
+      let failed = false;
       for (const result of [...this.pending.values()].filter(
         (r) => r.patientId === patientId
       )) {
-        await repository.saveResult(structuredClone(result));
+        try {
+          await repository.saveResult(structuredClone(result));
+        } catch {
+          failed = true;
+          continue;
+        }
         this.pending.delete(result.id);
         this.persist();
       }
+      if (failed) throw new Error('Há resultados pendentes de envio.');
     };
     const operation = (this.syncing ?? Promise.resolve())
       .catch(() => {})

@@ -1,3 +1,5 @@
+import { validMovementMetrics } from '@homephysio/contracts';
+import type { MovementMetrics } from '@homephysio/contracts';
 import type { ShoulderLevels } from '../exercise/shoulderInput';
 import type { PostureRequirement } from '../tracking/posture';
 
@@ -61,9 +63,11 @@ export interface SessionResult extends GameResult {
   activeMs: number;
   pausedMs: number;
   endReason: 'completed' | 'stopped' | 'error';
+  movement?: MovementMetrics;
 }
 /** Implementações devem fazer upsert por result.id; o mock não autentica usuários. */
 export interface SessionRepository {
+  publishesResults?(plan: SessionPlan): boolean;
   validateAccess?(plan: SessionPlan): Promise<boolean>;
   getPlanByCode(code: string): Promise<SessionPlan | null>;
   listResults(patientId: string): Promise<SessionResult[]>;
@@ -147,6 +151,7 @@ export function isSessionResult(value: unknown): value is SessionResult {
     value.patientId !== value.plan.patientId ||
     !text(value.gameVersion) ||
     !text(value.completedAt) ||
+    (value.movement !== undefined && !validMovementMetrics(value.movement)) ||
     !Number.isFinite(Date.parse(value.completedAt))
   )
     return false;

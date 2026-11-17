@@ -1,4 +1,6 @@
 import './style.css';
+import { GAME_DEFINITIONS } from '@homephysio/contracts';
+import type { Intensity } from '@homephysio/contracts';
 import { ShoulderInput } from '../../exercise/shoulderInput';
 import type { ShoulderAngles } from '../../exercise/automaticCalibration';
 import type { GoalkeeperConfig, GameResult } from '../../session/types';
@@ -8,21 +10,25 @@ import { GoalkeeperGame } from './goalkeeperGame';
 import { GoalkeeperScene } from './goalkeeperScene';
 
 export class GoalkeeperActivity implements GameActivity {
-  readonly version = '1.0.0';
+  readonly version = '1.1.0';
   readonly posture;
   readonly instructions = 'Fique de frente para a câmera, com ombros, cotovelos e quadris visíveis. Comece com os braços em repouso. Depois levante cada braço até sua altura máxima confortável.';
   readonly planDescription: string;
   private readonly config: GoalkeeperConfig;
+  private readonly intensity?: Intensity;
   private readonly input = new ShoulderInput();
+  get shoulderMeasurementRange() { return this.input.measuredRange; }
   private game: GoalkeeperGame | null = null;
   private scene: GoalkeeperScene | null = null;
   private panel: HTMLElement | null = null;
   private angles: ShoulderAngles = { left: 0, right: 0 };
   private feedback = 'Prepare-se para o primeiro chute.';
 
-  constructor(config: GoalkeeperConfig) {
+  constructor(config: GoalkeeperConfig, intensity?: Intensity) {
     this.config = config;
-    this.posture = { mode: 'front' as const, tolerance: config.posture?.tolerance ?? 0.2 };
+    this.intensity = intensity;
+    const { posture, defaults } = GAME_DEFINITIONS.goalkeeper;
+    this.posture = { mode: posture, tolerance: config.posture?.tolerance ?? defaults.postureTolerancePercent / 100 };
     this.planDescription = `${config.repetitions} chutes · mova as luvas para defender as bolas.`;
   }
 
@@ -43,7 +49,7 @@ export class GoalkeeperActivity implements GameActivity {
   start(stage: HTMLElement, panel: HTMLElement): void {
     const range = this.input.calibration;
     if (!range) throw new Error('Calibração necessária');
-    this.game = new GoalkeeperGame(this.config, range);
+    this.game = new GoalkeeperGame(this.config, range, this.intensity);
     this.angles = { left: range.left.rest, right: range.right.rest };
     this.scene = new GoalkeeperScene(stage);
     this.panel = panel;
@@ -66,26 +72,26 @@ export class GoalkeeperActivity implements GameActivity {
     const angles = this.input.read(frame);
     if (angles) this.angles = angles;
     const outcome = this.game?.update(angles, now);
-    if (outcome) this.feedback = outcome === 'hit' ? 'Defesa!' : 'Gol! Prepare-se para o próximo chute.';
+    if (outcome) this.feedback = outcome === 'hit' ? 'Defesa!' : 'Gol!';
     this.refresh(angles !== null);
     return { tracking: angles !== null, completed: this.game?.completed ?? false };
   }
 
   private refresh(tracking = true): void {
     if (!this.panel || !this.game) return;
-    const { hits, attempts, shot, progress } = this.game;
+    const { hits, attempts, shots } = this.game;
     this.panel.querySelector('[data-goalkeeper="score"]')!.textContent =
       `${hits} defesas · ${attempts.length} de ${this.config.repetitions} chutes`;
-    this.panel.querySelector<HTMLProgressElement>('[data-goalkeeper="flight"]')!.value = progress;
+    this.panel.querySelector<HTMLProgressElement>('[data-goalkeeper="flight"]')!.value = shots[0]?.progress ?? 0;
     const feedback = this.panel.querySelector('[data-goalkeeper="feedback"]')!;
     const message = !tracking
       ? 'Rastreamento pausado. Enquadre os dois braços.'
-      : shot ? `Chute à ${shot.side === 'left' ? 'esquerda' : 'direita'}!` : this.feedback;
+      : this.feedback;
     if (feedback.textContent !== message) feedback.textContent = message;
   }
 
   render(now: number): void {
-    if (this.game) this.scene?.render(this.angles, this.game.shot, this.game.progress, now);
+    if (this.game) this.scene?.render(this.angles, this.game.shots, now);
   }
 
   result(): GameResult {

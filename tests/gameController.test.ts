@@ -207,21 +207,35 @@ function setup(withPosture = false) {
   };
 }
 
-test('postura incompatível pausa e exige ajuste antes da retomada', async () => {
+test('três segundos de postura correta iniciam a contagem sem clicar em retomar', async () => {
   const env = setup(true);
   await env.start();
   await env.step(200);
   env.setShoulderWidth(0.03);
   for (let time = 300; time <= 1500; time += 100) await env.step(time);
   assert.match(env.elements.get('status')!.textContent, /pausada/);
-  assert.equal(env.elements.get('resume')!.disabled, true);
-  env.click('resume');
+  assert.equal(env.elements.get('resume')!.hidden, true);
+  const status = env.elements.get('status')!;
+  const countdown = env.elements.get('resume-countdown-number')!;
+  const updatesAtPause = env.getTrackedUpdates();
   env.setShoulderWidth(0.32);
-  for (let time = 1600; time <= 3000; time += 100) await env.step(time);
-  assert.equal(env.elements.get('resume')!.disabled, false);
-  assert.match(env.elements.get('status')!.textContent, /retomar/);
-  env.click('resume');
-  await env.step(3100);
+  let time = 1500;
+  while (!status.textContent.includes('Mantenha a posição') && time < 3000) {
+    time += 100;
+    await env.step(time);
+  }
+  assert.match(status.textContent, /3 segundos/);
+  const startsCountdownAt = time + 3000;
+  for (time += 100; time < startsCountdownAt; time += 100) await env.step(time);
+  assert.equal(countdown.textContent, '');
+  await env.step(startsCountdownAt);
+  assert.equal(countdown.textContent, '3');
+  for (time = startsCountdownAt + 100; time < startsCountdownAt + 3000; time += 100)
+    await env.step(time);
+  assert.equal(env.getTrackedUpdates(), updatesAtPause);
+  await env.step(startsCountdownAt + 3000);
+  await env.step(startsCountdownAt + 3100);
+  assert.ok(env.getTrackedUpdates() > updatesAtPause);
   env.click('finish');
   await wait();
   assert.ok(env.saved[0].pausedMs > 0);

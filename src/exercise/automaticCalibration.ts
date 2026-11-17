@@ -15,6 +15,7 @@ export class AutomaticCalibration {
   private lastTime: number | null = null;
   private rest: ShoulderAngles | null = null;
   private result: BilateralCalibration | undefined;
+  measuredRange?: BilateralCalibration;
   private readonly holdTimeMs: number;
   private readonly toleranceDegrees: number;
   constructor(holdTimeMs = 1800, toleranceDegrees = 8) { this.holdTimeMs = holdTimeMs; this.toleranceDegrees = toleranceDegrees; }
@@ -40,6 +41,7 @@ export class AutomaticCalibration {
     const left = createCalibration(this.rest!.left, angles.left), right = createCalibration(this.rest!.right, angles.right);
     if (!left || !right) { this.resetHold(); return { stage: this.stage, progress: 0, message: 'Não foi possível definir o alcance. Tente novamente.' }; }
     const range = Math.min(left.maximum - left.rest, right.maximum - right.rest);
+    this.measuredRange = { left, right };
     this.stage = 'complete';
     this.result = {
       left: { rest: left.rest, maximum: left.rest + range },

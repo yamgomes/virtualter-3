@@ -75,12 +75,12 @@ export class GoalkeeperScene {
   private readonly loader = new GLTFLoader();
   private readonly goal = new THREE.Group();
   private readonly player = new THREE.Group();
-  private readonly ball = new THREE.Group();
+  private readonly balls = [new THREE.Group(), new THREE.Group()];
   private readonly gloves = { left: new THREE.Group(), right: new THREE.Group() };
-  private readonly marker = new THREE.Mesh(
+  private readonly markers = this.balls.map(() => new THREE.Mesh(
     new THREE.RingGeometry(0.063, 0.076, 32),
     new THREE.MeshBasicMaterial({ color: 0xffd866 })
-  );
+  ));
   private readonly observer: ResizeObserver;
   private readonly stage: HTMLElement;
   private disposed = false;
@@ -113,15 +113,22 @@ export class GoalkeeperScene {
     head.position.y = 0.86;
     this.player.add(body, head);
     this.player.position.set(0, GROUND, -0.09);
-    this.ball.add(mesh(new THREE.SphereGeometry(0.052, 16, 12), 0xfff9e5));
+    for (const ball of this.balls) {
+      ball.add(mesh(new THREE.SphereGeometry(0.052, 16, 12), 0xfff9e5));
+      ball.visible = false;
+    }
+    for (const marker of this.markers) marker.visible = false;
     this.gloves.left.add(mesh(new THREE.SphereGeometry(0.055, 16, 12), 0x3acaff));
     this.gloves.right.add(mesh(new THREE.SphereGeometry(0.055, 16, 12), 0xff777f));
-    this.scene.add(this.goal, this.player, this.ball, this.gloves.left, this.gloves.right, this.marker);
-    this.ball.visible = this.marker.visible = false;
+    this.scene.add(this.goal, this.player, this.gloves.left, this.gloves.right, ...this.balls, ...this.markers);
 
     void this.load(goalUrl, (model) => this.replace(this.goal, fit(model, 'x', 1.7, true)));
     void this.load(playerUrl, (model) => this.replace(this.player, fit(model, 'y', PLAYER_HEIGHT, true)));
-    void this.load(ballUrl, (model) => this.replace(this.ball, fit(model, 'y', 0.104)));
+    void this.load(ballUrl, (model) => {
+      const fitted = fit(model, 'y', 0.104);
+      this.replace(this.balls[0], fitted);
+      this.replace(this.balls[1], fitted.clone());
+    });
     void this.load(gloveUrl, (model) => {
       const mirrored = fit(clone(model), 'y', 0.15);
       mirrored.scale.x *= -1;
@@ -163,22 +170,26 @@ export class GoalkeeperScene {
     this.renderer.setSize(width, height, false);
   }
 
-  render(angles: ShoulderAngles, shot: Shot | null, progress: number, now: number): void {
+  render(angles: ShoulderAngles, shots: readonly Shot[], now: number): void {
     for (const side of SIDES) {
       const pose = glovePose(side, angles[side]);
       const glove = this.gloves[side];
       glove.position.set(pose.x, pose.y, 0.02);
       glove.rotation.z = pose.rotation;
     }
-    this.ball.visible = this.marker.visible = shot !== null;
-    if (shot) {
+    this.balls.forEach((ball, index) => {
+      const shot = shots[index];
+      const marker = this.markers[index];
+      ball.visible = marker.visible = !!shot;
+      if (!shot) return;
+      const { progress } = shot;
       const { x, y } = glovePose(shot.side, shot.degrees);
-      this.marker.position.set(x, y, -0.015);
-      this.marker.scale.setScalar(1 + (1 - progress) * 0.32);
-      this.ball.position.set(x * progress, THREE.MathUtils.lerp(0.52, y, progress), 1 - progress);
-      this.ball.scale.setScalar(1.55 - progress * 0.55);
-      this.ball.rotation.set(now / 440, now / 610, 0);
-    }
+      marker.position.set(x, y, -0.015);
+      marker.scale.setScalar(1 + (1 - progress) * 0.32);
+      ball.position.set(x * progress, THREE.MathUtils.lerp(0.52, y, progress), 1 - progress);
+      ball.scale.setScalar(1.55 - progress * 0.55);
+      ball.rotation.set(now / 440, now / 610, 0);
+    });
     this.renderer.render(this.scene, this.camera);
   }
 

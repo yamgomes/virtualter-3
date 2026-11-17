@@ -24,6 +24,10 @@ export class ShoulderInput {
     return this.range;
   }
 
+  get measuredRange() {
+    return this.calibrator.measuredRange;
+  }
+
   calibrate(frame: PoseFrame | null, now: number) {
     const progress = this.calibrator.update(measure(frame), now);
     this.range = progress.result;

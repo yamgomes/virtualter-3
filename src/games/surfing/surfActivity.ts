@@ -1,4 +1,5 @@
 import './style.css';
+import { GAME_DEFINITIONS } from '@homephysio/contracts';
 import type { GameActivity, PreparationProgress } from '../contracts';
 import type { PoseFrame } from '../../tracking/types';
 import type { GameResult, SurfConfig } from '../../session/types';
@@ -26,7 +27,8 @@ export class SurfActivity implements GameActivity {
   private tracking = false;
   constructor(config: SurfConfig) {
     this.config = config;
-    this.posture = { mode: 'side' as const, tolerance: config.posture?.tolerance ?? 0.2 };
+    const { posture, defaults } = GAME_DEFINITIONS.surfing;
+    this.posture = { mode: posture, tolerance: config.posture?.tolerance ?? defaults.postureTolerancePercent / 100 };
     this.game = new SurfGame(config);
     this.instructions = `Fique de lado, com o lado ${config.side === 'left' ? 'esquerdo' : 'direito'} voltado para a câmera. Enquadre o ombro e o quadril desse lado. Mantenha o tronco ereto; depois incline-o para a frente dentro do seu alcance confortável. Mantenha a mesma orientação durante a partida.`;
     this.planDescription = `${config.repetitions} acertos mínimos · inclinação do tronco · manter por ${config.holdMs / 1000} s · ${config.timeLimitMs / 1000} s por alvo.`;

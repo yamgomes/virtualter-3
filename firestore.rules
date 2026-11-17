@@ -1,6 +1,8 @@
 rules_version = '2';
 // professionals/{uid}/patients/{id}: cadastro privado, terapia, código e revisão.
 // patientAccess/{code}: projeção da terapia sem nome ou dados de contato.
+// issuedPatientCodes/{code}: reserva permanente, sem leitura pelos clientes.
+// professionals/{uid}/patients/{id}/results/{sessionId}: placar e métricas agregadas de uma sessão.
 service cloud.firestore {
   match /databases/{database}/documents {
     function verified() {
@@ -17,11 +19,11 @@ service cloud.firestore {
     function therapy(t) {
       let n = '(100|[0-9]{1,2}([.][0-9]{1,2})?)';
       return t is map && t.keys().hasOnly(['gameId','title','intensity','metrics','targets','durationSeconds','repetitions','holdSeconds','targetSeconds','tolerancePercent','postureTolerancePercent','pointsPerHit','side'])
-        && label(t.title) && t.gameId in ['shoulder','surfing'] && t.side in ['left','right']
+        && label(t.title) && t.gameId in ['shoulder','surfing','goalkeeper'] && t.side in ['left','right']
         && t.intensity in ['low','moderate','high','custom'] && t.metrics is list && t.metrics.size() >= 1 && t.metrics.size() <= 5
         && t.metrics.hasOnly(['hits','misses','points','activeMs','pausedMs']) && t.metrics.toSet().size() == t.metrics.size()
         && t.targets is string && t.targets.size() <= 500
-        && (t.gameId == 'shoulder' ? t.targets.matches('^'+n+'/'+n+'(,'+n+'/'+n+')*$') : t.targets.matches('^'+n+'(,'+n+')*$'))
+        && (t.gameId == 'goalkeeper' ? t.targets == '' : (t.gameId == 'shoulder' ? t.targets.matches('^'+n+'/'+n+'(,'+n+'/'+n+')*$') : t.targets.matches('^'+n+'(,'+n+')*$')))
         && bounded(t.durationSeconds,1,3600) && t.repetitions is int && bounded(t.repetitions,1,1000)
         && bounded(t.targetSeconds,0.1,3600) && bounded(t.holdSeconds,0,t.targetSeconds)
         && bounded(t.tolerancePercent,1,50) && bounded(t.postureTolerancePercent,0,100)
@@ -34,6 +36,30 @@ service cloud.firestore {
     function matchesAccess(d, professional, id) {
       let a = getAfter(/databases/$(database)/documents/patientAccess/$(d.code)).data;
       return a.ownerId == professional && a.patientId == id && a.therapy == d.therapy && a.revision == d.revision;
+    }
+    function resultCount(value, max) { return value is int && bounded(value, 0, max); }
+    function validSessionReport(d) {
+      return d.keys().hasOnly(['schemaVersion','gameId','title','revision','completedAtMs','activeMs','pausedMs','endReason','hits','misses','points','movement','accessCode'])
+        && d.schemaVersion == 1 && d.gameId in ['shoulder','goalkeeper'] && label(d.title)
+        && d.revision is int && d.revision >= 1 && d.accessCode is string && issuedCode(d.accessCode)
+        && d.completedAtMs is int && bounded(d.completedAtMs, 1, request.time.toMillis() + 300000)
+        && resultCount(d.activeMs, 604800000) && resultCount(d.pausedMs, 604800000)
+        && d.endReason in ['completed','stopped','error']
+        && resultCount(d.hits, 10000) && resultCount(d.misses, 10000) && resultCount(d.points, 10000000)
+        && d.movement is map && d.movement.keys().hasOnly(['shoulderRepetitions'])
+        && d.movement.shoulderRepetitions is map && d.movement.shoulderRepetitions.keys().hasOnly(['left','right'])
+        && resultCount(d.movement.shoulderRepetitions.left, 100000) && resultCount(d.movement.shoulderRepetitions.right, 100000);
+    }
+    function matchesResultAccess(d, professional, id) {
+      let access = get(/databases/$(database)/documents/patientAccess/$(d.accessCode)).data;
+      return access != null && !access.get('revoked', false)
+        && access.ownerId == professional && access.patientId == id
+        && access.revision == d.revision && access.therapy.gameId == d.gameId && access.therapy.title == d.title
+        && d.points == d.hits * access.therapy.pointsPerHit
+        && (d.gameId == 'goalkeeper'
+          ? d.hits + d.misses <= access.therapy.repetitions
+            && (d.endReason != 'completed' || d.hits + d.misses == access.therapy.repetitions)
+          : d.hits + d.misses <= 10000);
     }
     match /professionals/{professional}/patients/{id} {
       allow get: if owner(professional);
@@ -49,14 +75,37 @@ service cloud.firestore {
         && (resource.data.code == '' || resource.data.code == request.resource.data.code
           || getAfter(/databases/$(database)/documents/patientAccess/$(resource.data.code)).data.revoked == true);
     }
+    match /professionals/{professional}/patients/{id}/results/{sessionId} {
+      allow get: if owner(professional);
+      allow list: if owner(professional) && request.query.limit <= 100;
+      allow create: if sessionId.matches('^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$')
+        && validSessionReport(request.resource.data) && matchesResultAccess(request.resource.data, professional, id);
+      // Reenvio do mesmo documento sem alterar os resultados já registrados.
+      allow update: if request.resource.data == resource.data
+        && validSessionReport(request.resource.data) && matchesResultAccess(request.resource.data, professional, id);
+    }
     function validAccess(d, token) {
       let p = getAfter(/databases/$(database)/documents/professionals/$(d.ownerId)/patients/$(d.patientId)).data;
       return d.keys().hasOnly(['ownerId','patientId','therapy','revision']) && uid(d.patientId) && code(token)
         && p.code == token && p.therapy == d.therapy && p.revision == d.revision;
     }
+    function belongsToPatient(d, professional, id) {
+      return d != null && d.ownerId == professional && d.patientId == id;
+    }
+    match /issuedPatientCodes/{token} {
+      allow create: if code(token) && owner(request.resource.data.ownerId)
+        && request.resource.data.keys().hasOnly(['ownerId','patientId'])
+        && uid(request.resource.data.patientId)
+        // As projeções antigas, inclusive revogadas, também reservam seus códigos.
+        && !exists(/databases/$(database)/documents/patientAccess/$(token))
+        && belongsToPatient(getAfter(/databases/$(database)/documents/patientAccess/$(token)).data,
+          request.resource.data.ownerId, request.resource.data.patientId);
+    }
     match /patientAccess/{token} {
-      allow get: if issuedCode(token) && (verified() || (resource != null && resource.data.get('revoked', false) == false));
-      allow create: if owner(request.resource.data.ownerId) && validAccess(request.resource.data, token);
+      allow get: if issuedCode(token) && resource != null && resource.data.get('revoked', false) == false;
+      allow create: if owner(request.resource.data.ownerId) && validAccess(request.resource.data, token)
+        && belongsToPatient(getAfter(/databases/$(database)/documents/issuedPatientCodes/$(token)).data,
+          request.resource.data.ownerId, request.resource.data.patientId);
       allow update: if owner(resource.data.ownerId) && resource.data.get('revoked', false) == false && (
         (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['therapy','revision']) && validAccess(request.resource.data, token))
         || (request.resource.data == {'revoked': true}

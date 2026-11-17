@@ -1,3 +1,4 @@
+import { DEFAULT_GOALKEEPER_FLIGHT_MS } from '@homephysio/contracts';
 import { isSessionResult } from './types';
 import type { SessionPlan, SessionRepository, SessionResult } from './types';
 
@@ -14,7 +15,7 @@ const plans: Record<string, SessionPlan> = {
     gameId: 'goalkeeper',
     config: {
       repetitions: 8,
-      timeLimitMs: 2200,
+      timeLimitMs: DEFAULT_GOALKEEPER_FLIGHT_MS,
       tolerance: 0.18,
       pointsPerHit: 10,
     },

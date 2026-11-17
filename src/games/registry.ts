@@ -10,6 +10,6 @@ export const createActivity: ActivityFactory = (plan) => {
     case 'surfing':
       return new SurfActivity(plan.config);
     case 'goalkeeper':
-      return new GoalkeeperActivity(plan.config);
+      return new GoalkeeperActivity(plan.config, plan.intensity);
   }
 };
