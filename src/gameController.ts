@@ -1,18 +1,18 @@
-import { PoseFilter } from './tracking/poseFilter';
-import { PoseBuffer } from './tracking/poseBuffer';
-import type { PoseSource } from './tracking/types';
-import { PoseOverlay } from './presentation/poseOverlay';
+import { ShoulderRepetitionCounter } from './exercise/shoulderRepetitions';
 import type { ActivityFactory, GameActivity } from './games/contracts';
-import { isSessionPlan } from './session/types';
+import { PoseOverlay } from './presentation/poseOverlay';
+import { ResultOutbox } from './session/resultOutbox';
+import { SessionClock } from './session/sessionClock';
 import type {
   SessionPlan,
   SessionRepository,
   SessionResult,
 } from './session/types';
-import { ResultOutbox } from './session/resultOutbox';
-import { SessionClock } from './session/sessionClock';
+import { isSessionPlan } from './session/types';
+import { PoseBuffer } from './tracking/poseBuffer';
+import { PoseFilter } from './tracking/poseFilter';
 import { PostureMonitor } from './tracking/posture';
-import { ShoulderRepetitionCounter } from './exercise/shoulderRepetitions';
+import type { PoseSource } from './tracking/types';
 
 type Phase =
   | 'welcome'
@@ -31,8 +31,11 @@ const POSTURE_RECOVERY_MS = 3000;
 type PosePreview = Pick<PoseOverlay, 'setVisible' | 'update' | 'dispose'>;
 
 function cameraCouldNotStart(error: unknown): boolean {
-  return error instanceof Error &&
-    (error.name === 'NotReadableError' || error.message === 'Could not start video source');
+  return (
+    error instanceof Error &&
+    (error.name === 'NotReadableError' ||
+      error.message === 'Could not start video source')
+  );
 }
 
 /** Hospeda qualquer atividade; não conhece articulações, regras ou cenas dos jogos. */
@@ -102,7 +105,7 @@ export class GameController {
       },
       options
     );
-    this.el('try-goalkeeper').addEventListener(
+    this.el('try-demo').addEventListener(
       'click',
       () => void this.loadPlan('GOOL'),
       options
@@ -132,8 +135,6 @@ export class GameController {
         this.posturePause = false;
         this.postureCorrectSince = null;
         this.el('preparation-instructions').textContent =
-          this.activity.instructions;
-        this.el('calibration-instructions').textContent =
           this.activity.instructions;
         try {
           this.audio ??= new AudioContext();
@@ -262,18 +263,25 @@ export class GameController {
       this.el('plan-title').textContent = plan.title;
       this.el('plan-description').textContent = this.activity.planDescription;
       if (plan.metrics?.length) {
-        const labels = { hits: 'acertos', misses: 'alvos não alcançados', points: 'pontuação', activeMs: 'tempo ativo', pausedMs: 'tempo em pausa' };
-        this.el('plan-description').textContent += ` Métricas: ${plan.metrics.map(m => labels[m]).join(', ')}.`;
+        const labels = {
+          hits: 'acertos',
+          misses: 'alvos não alcançados',
+          points: 'pontuação',
+          activeMs: 'tempo ativo',
+          pausedMs: 'tempo em pausa',
+        };
+        this.el('plan-description').textContent +=
+          ` Métricas: ${plan.metrics.map((m) => labels[m]).join(', ')}.`;
       }
       const posture = this.activity.posture;
-      this.el('expected-posture').textContent = posture ? {
-        front: 'De frente',
-        'front-palms-up': 'De frente, palmas para cima',
-        side: 'De lado',
-      }[posture.mode] : 'Sem posição definida';
+      this.el('expected-posture').textContent = posture
+        ? {
+            front: 'De frente',
+            'front-palms-up': 'De frente, palmas para cima',
+            side: 'De lado',
+          }[posture.mode]
+        : 'Sem posição definida';
       this.el('preparation-instructions').textContent =
-        this.activity.instructions;
-      this.el('calibration-instructions').textContent =
         this.activity.instructions;
       this.lastResult = null;
       this.phase = 'plan';
@@ -310,7 +318,8 @@ export class GameController {
           title = document.createElement('strong'),
           detail = document.createElement('span');
         title.textContent = result.plan.title;
-        const scored = result.plan.gameId === 'goalkeeper' ? 'defesas' : 'acertos';
+        const scored =
+          result.plan.gameId === 'goalkeeper' ? 'defesas' : 'acertos';
         detail.textContent = `${new Date(result.completedAt).toLocaleString('pt-BR')} · ${result.hits}/${result.plannedAttempts} ${scored} · ${result.endReason === 'completed' ? 'concluída' : 'interrompida'}`;
         row.append(title, detail);
         list.append(row);
@@ -328,31 +337,48 @@ export class GameController {
     this.message('Preparando câmera e detector…');
     this.update();
     let step: 'access' | 'camera' | 'detector' = 'access';
-    let failure = 'Não foi possível confirmar o acesso à sessão. Confira a conexão e tente novamente.';
+    let failure =
+      'Não foi possível confirmar o acesso à sessão. Confira a conexão e tente novamente.';
     try {
-      if (this.repository.validateAccess && !(await this.repository.validateAccess(this.plan))) {
-        failure = 'O código ou a terapia mudou. Volte à atividade e use o código atual fornecido pelo fisioterapeuta.';
+      if (
+        this.repository.validateAccess &&
+        !(await this.repository.validateAccess(this.plan))
+      ) {
+        failure =
+          'O código ou a terapia mudou. Volte à atividade e use o código atual fornecido pelo fisioterapeuta.';
         throw new Error(failure);
       }
       if (generation !== this.cameraGeneration || this.disposed) return;
       step = 'camera';
-      failure = 'Não foi possível abrir a câmera. Confira se ela está conectada e tente novamente.';
+      failure =
+        'Não foi possível abrir a câmera. Confira se ela está conectada e tente novamente.';
       if (!navigator.mediaDevices?.getUserMedia) {
         failure = 'Abra o aplicativo em localhost ou HTTPS para usar a câmera.';
         throw new Error(failure);
       }
       const mediaDevices = navigator.mediaDevices;
-      const acquired = await mediaDevices.getUserMedia({
-        video: { facingMode: 'user' },
-        audio: false,
-      }).catch((error: unknown) => {
-        if (!cameraCouldNotStart(error) || generation !== this.cameraGeneration || this.disposed)
-          throw error;
-        return mediaDevices.getUserMedia({
-          video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 15 } },
+      const acquired = await mediaDevices
+        .getUserMedia({
+          video: { facingMode: 'user' },
           audio: false,
+        })
+        .catch((error: unknown) => {
+          if (
+            !cameraCouldNotStart(error) ||
+            generation !== this.cameraGeneration ||
+            this.disposed
+          )
+            throw error;
+          return mediaDevices.getUserMedia({
+            video: {
+              facingMode: 'user',
+              width: { ideal: 640 },
+              height: { ideal: 480 },
+              frameRate: { ideal: 15 },
+            },
+            audio: false,
+          });
         });
-      });
       if (generation !== this.cameraGeneration || this.disposed) {
         acquired.getTracks().forEach((t) => t.stop());
         return;
@@ -362,11 +388,15 @@ export class GameController {
       await this.video.play();
       if (generation !== this.cameraGeneration || this.disposed) return;
       step = 'detector';
-      failure = 'Não foi possível carregar o detector de movimento. Confira a conexão e tente novamente.';
+      failure =
+        'Não foi possível carregar o detector de movimento. Confira a conexão e tente novamente.';
       await this.detector.initialize();
       if (generation !== this.cameraGeneration || this.disposed) return;
-      this.el('camera-preview').style.aspectRatio =
-        `${this.video.videoWidth || 4} / ${this.video.videoHeight || 3}`;
+      const preview = this.el('camera-preview');
+      const width = this.video.videoWidth || 4;
+      const height = this.video.videoHeight || 3;
+      preview.style.aspectRatio = `${width} / ${height}`;
+      preview.style.maxWidth = `calc(var(--stage-height, 100vmax) * ${width / height})`;
       for (const track of acquired.getVideoTracks())
         track.addEventListener(
           'ended',
@@ -397,11 +427,17 @@ export class GameController {
       console.error(`Falha na preparação da sessão (${step}):`, error);
       if (step === 'camera' && error instanceof Error) {
         if (cameraCouldNotStart(error))
-          failure = 'O navegador não conseguiu iniciar a câmera. Feche outros aplicativos ou abas que estejam usando a câmera e tente novamente.';
-        else if (error.name === 'NotAllowedError' || error.name === 'SecurityError')
-          failure = 'Permita o acesso à câmera nas configurações do navegador e tente novamente.';
+          failure =
+            'O navegador não conseguiu iniciar a câmera. Feche outros aplicativos ou abas que estejam usando a câmera e tente novamente.';
+        else if (
+          error.name === 'NotAllowedError' ||
+          error.name === 'SecurityError'
+        )
+          failure =
+            'Permita o acesso à câmera nas configurações do navegador e tente novamente.';
         else if (error.name === 'NotFoundError')
-          failure = 'Nenhuma câmera foi encontrada. Conecte uma câmera e tente novamente.';
+          failure =
+            'Nenhuma câmera foi encontrada. Conecte uma câmera e tente novamente.';
       }
       this.stopCamera();
       this.phase = resume ? 'paused' : 'preparation-error';
@@ -442,7 +478,9 @@ export class GameController {
       try {
         if (
           !document.hidden &&
-          (['camera', 'calibrating', 'playing', 'resuming'].includes(this.phase) ||
+          (['camera', 'calibrating', 'playing', 'resuming'].includes(
+            this.phase
+          ) ||
             (this.phase === 'paused' && this.posturePause))
         ) {
           const raw = await this.detector.detect();
@@ -453,7 +491,9 @@ export class GameController {
             let invalidCalibrationPosture = false;
             if (
               this.postureMonitor &&
-              ['calibrating', 'playing', 'paused', 'resuming'].includes(this.phase)
+              ['calibrating', 'playing', 'paused', 'resuming'].includes(
+                this.phase
+              )
             ) {
               const posture = this.postureMonitor.update(
                 frame,
@@ -463,19 +503,26 @@ export class GameController {
               warning.textContent =
                 posture.state === 'valid' ? '' : posture.message;
               warning.dataset.state = posture.state;
-              const aligned = posture.state === 'valid' || posture.bodyAligned === true;
+              const aligned =
+                posture.state === 'valid' || posture.bodyAligned === true;
               if (
-                ((this.phase === 'playing' || this.phase === 'resuming') && posture.state === 'invalid') ||
+                ((this.phase === 'playing' || this.phase === 'resuming') &&
+                  posture.state === 'invalid') ||
                 (this.phase === 'resuming' && this.posturePause && !aligned)
               ) {
                 this.posturePause = true;
                 this.postureCorrectSince = null;
-                this.pause('Sessão pausada. Ajuste sua posição para retomar automaticamente.');
+                this.pause(
+                  'Sessão pausada. Ajuste sua posição para retomar automaticamente.'
+                );
                 warning.textContent = posture.message;
                 warning.dataset.state = posture.state;
               } else if (this.phase === 'paused' && this.posturePause) {
                 this.checkPostureRecovery(aligned, now);
-              } else if (this.phase === 'calibrating' && posture.state === 'invalid') {
+              } else if (
+                this.phase === 'calibrating' &&
+                posture.state === 'invalid'
+              ) {
                 this.activity!.resetCalibration();
                 this.el<HTMLProgressElement>('calibration-progress').value = 0;
                 invalidCalibrationPosture = true;
@@ -528,7 +575,9 @@ export class GameController {
     try {
       this.activity.start(this.el('camera-preview'), this.el('game-ui'));
       const range = this.activity.shoulderMeasurementRange;
-      this.shoulderRepetitions = range ? new ShoulderRepetitionCounter(range) : null;
+      this.shoulderRepetitions = range
+        ? new ShoulderRepetitionCounter(range)
+        : null;
       this.sessionId = crypto.randomUUID();
       this.lastHits = 0;
       this.clock = new SessionClock(performance.now());
@@ -552,20 +601,45 @@ export class GameController {
   private render(now: number): void {
     if (this.disposed) return;
     if (this.phase === 'resuming') this.updateResumeCountdown(now);
-    if (this.repository.validateAccess && this.plan && ['playing', 'calibrating'].includes(this.phase) && !this.accessCheckPending && now - this.accessCheckAt >= 30000) {
+    if (
+      this.repository.validateAccess &&
+      this.plan &&
+      ['playing', 'calibrating'].includes(this.phase) &&
+      !this.accessCheckPending &&
+      now - this.accessCheckAt >= 30000
+    ) {
       this.accessCheckAt = now;
       this.accessCheckPending = true;
-      const plan = this.plan, generation = this.cameraGeneration;
-      void this.repository.validateAccess(plan).then(valid => {
-        if (!valid) throw Error('Código substituído ou terapia atualizada. Solicite o código atual ao profissional.');
-      }).catch(() => {
-        if (this.disposed || this.plan !== plan || generation !== this.cameraGeneration) return;
-        this.pause('Não foi possível confirmar o acesso. Confira a conexão ou solicite o código atual.');
-        this.stopCamera();
-        this.phase = this.clock ? 'paused' : 'plan';
-        this.message('Acesso interrompido: confira sua conexão ou digite o código atual fornecido pelo profissional.');
-        this.update();
-      }).finally(() => { this.accessCheckPending = false; });
+      const plan = this.plan,
+        generation = this.cameraGeneration;
+      void this.repository
+        .validateAccess(plan)
+        .then((valid) => {
+          if (!valid)
+            throw Error(
+              'Código substituído ou terapia atualizada. Solicite o código atual ao profissional.'
+            );
+        })
+        .catch(() => {
+          if (
+            this.disposed ||
+            this.plan !== plan ||
+            generation !== this.cameraGeneration
+          )
+            return;
+          this.pause(
+            'Não foi possível confirmar o acesso. Confira a conexão ou solicite o código atual.'
+          );
+          this.stopCamera();
+          this.phase = this.clock ? 'paused' : 'plan';
+          this.message(
+            'Acesso interrompido: confira sua conexão ou digite o código atual fornecido pelo profissional.'
+          );
+          this.update();
+        })
+        .finally(() => {
+          this.accessCheckPending = false;
+        });
     }
     if (this.phase === 'paused' && this.posturePause && !this.poses.read(now))
       this.checkPostureRecovery(false, now);
@@ -605,7 +679,9 @@ export class GameController {
     }
     if (this.postureCorrectSince === null) {
       this.postureCorrectSince = now;
-      this.message('Mantenha a posição por 3 segundos para iniciar a contagem.');
+      this.message(
+        'Mantenha a posição por 3 segundos para iniciar a contagem.'
+      );
     }
     if (now - this.postureCorrectSince >= POSTURE_RECOVERY_MS)
       this.startResumeCountdown(now);
@@ -622,17 +698,22 @@ export class GameController {
   private updateResumeCountdown(now: number): void {
     const pose = this.poses.read(now);
     if (this.posturePause && !pose) {
-      this.pause('Movimento não detectado. Ajuste sua posição para retomar automaticamente.');
+      this.pause(
+        'Movimento não detectado. Ajuste sua posição para retomar automaticamente.'
+      );
       return;
     }
     const remaining = Math.ceil((this.resumeAt - now) / 1000);
     if (remaining > 0) {
       const number = this.el('resume-countdown-number');
-      if (number.textContent !== String(remaining)) number.textContent = String(remaining);
+      if (number.textContent !== String(remaining))
+        number.textContent = String(remaining);
       return;
     }
     if (!pose) {
-      this.pause('Movimento não detectado. Confira seu enquadramento e tente retomar.');
+      this.pause(
+        'Movimento não detectado. Confira seu enquadramento e tente retomar.'
+      );
       return;
     }
     this.posturePause = false;
@@ -686,15 +767,22 @@ export class GameController {
           : 'Sessão encerrada por você.';
     const goalkeeper = result.plan.gameId === 'goalkeeper';
     const summaries = {
-      hits: goalkeeper ? `${result.hits} defesas em ${result.attempts.length} chutes` : `${result.hits} acertos (meta mínima: ${result.plannedAttempts})`,
+      hits: goalkeeper
+        ? `${result.hits} defesas em ${result.attempts.length} chutes`
+        : `${result.hits} acertos (meta mínima: ${result.plannedAttempts})`,
       misses: `${result.misses} ${goalkeeper ? 'gols sofridos' : 'alvos não alcançados'}`,
       points: `${result.points} pontos`,
       activeMs: `Tempo ativo: ${Math.round(result.activeMs / 1000)} s`,
       pausedMs: `Pausas: ${Math.round(result.pausedMs / 1000)} s`,
     };
-    const details = (result.plan.metrics ?? ['hits', 'misses', 'points', 'activeMs', 'pausedMs'] as const)
-      .map(metric => summaries[metric]);
-    if (repetitions) details.push(`Elevações: ${repetitions.left} à esquerda, ${repetitions.right} à direita`);
+    const details = (
+      result.plan.metrics ??
+      (['hits', 'misses', 'points', 'activeMs', 'pausedMs'] as const)
+    ).map((metric) => summaries[metric]);
+    if (repetitions)
+      details.push(
+        `Elevações: ${repetitions.left} à esquerda, ${repetitions.right} à direita`
+      );
     this.el('summary-text').textContent = details.join(' · ');
     this.phase = 'summary';
     this.clock = null;
@@ -770,9 +858,14 @@ export class GameController {
   private update(): void {
     document.body.classList.toggle(
       'camera-active',
-      ['opening', 'camera', 'calibrating', 'playing', 'paused', 'resuming'].includes(
-        this.phase
-      )
+      [
+        'opening',
+        'camera',
+        'calibrating',
+        'playing',
+        'paused',
+        'resuming',
+      ].includes(this.phase)
     );
     document
       .querySelectorAll<HTMLElement>('[data-phase]')
@@ -791,7 +884,7 @@ export class GameController {
     resume.disabled = autoResume;
     this.el<HTMLButtonElement>('access-plan').disabled =
       this.phase === 'loading';
-    this.el<HTMLButtonElement>('try-goalkeeper').disabled = this.phase === 'loading';
+    this.el<HTMLButtonElement>('try-demo').disabled = this.phase === 'loading';
   }
   dispose(): void {
     if (this.disposed) return;
@@ -807,4 +900,3 @@ export class GameController {
     this.overlay.dispose();
   }
 }
-

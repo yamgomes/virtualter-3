@@ -1,14 +1,14 @@
-import './style.css';
 import { GAME_DEFINITIONS } from '@homephysio/contracts';
-import type { GameActivity, PreparationProgress } from '../contracts';
-import type { PoseFrame } from '../../tracking/types';
-import type { GameResult, SurfConfig } from '../../session/types';
+import type { LeanRange } from '../../exercise/trunkLean';
 import {
   LeanCalibration,
   normalizeLean,
   trunkLean,
 } from '../../exercise/trunkLean';
-import type { LeanRange } from '../../exercise/trunkLean';
+import type { GameResult, SurfConfig } from '../../session/types';
+import type { PoseFrame } from '../../tracking/types';
+import type { GameActivity, PreparationProgress } from '../contracts';
+import './style.css';
 import { SurfGame } from './surfGame';
 import { SurfScene } from './surfScene';
 
@@ -28,7 +28,11 @@ export class SurfActivity implements GameActivity {
   constructor(config: SurfConfig) {
     this.config = config;
     const { posture, defaults } = GAME_DEFINITIONS.surfing;
-    this.posture = { mode: posture, tolerance: config.posture?.tolerance ?? defaults.postureTolerancePercent / 100 };
+    this.posture = {
+      mode: posture,
+      tolerance:
+        config.posture?.tolerance ?? defaults.postureTolerancePercent / 100,
+    };
     this.game = new SurfGame(config);
     this.instructions = `Fique de lado, com o lado ${config.side === 'left' ? 'esquerdo' : 'direito'} voltado para a câmera. Enquadre o ombro e o quadril desse lado. Mantenha o tronco ereto; depois incline-o para a frente dentro do seu alcance confortável. Mantenha a mesma orientação durante a partida.`;
     this.planDescription = `${config.repetitions} acertos mínimos · inclinação do tronco · manter por ${config.holdMs / 1000} s · ${config.timeLimitMs / 1000} s por alvo.`;
@@ -57,7 +61,7 @@ export class SurfActivity implements GameActivity {
     if (!this.calibration) throw new Error('Calibração necessária');
     this.scene = new SurfScene(stage);
     this.panel = panel;
-    panel.innerHTML = `<p class="eyebrow">SURFE</p><h1>Encontre a onda.</h1><p>Incline o tronco para mover o surfista até a faixa dourada. Volte ao repouso para retornar à esquerda.</p><p data-surf="score"></p><label for="surf-position">Sua inclinação</label><progress id="surf-position" max="1" value="0"></progress><p data-surf="target"></p><p data-surf="time"></p><p data-surf="feedback" class="tracking" aria-live="polite">Prepare-se para a primeira onda.</p>`;
+    panel.innerHTML = `<h1>Encontre a onda.</h1><p>Incline o tronco para mover o surfista até a faixa dourada. Volte ao repouso para retornar à esquerda.</p><p data-surf="score"></p><label for="surf-position">Sua inclinação</label><progress id="surf-position" max="1" value="0"></progress><p data-surf="target"></p><p data-surf="time"></p><p data-surf="feedback" class="tracking" aria-live="polite">Prepare-se para a primeira onda.</p>`;
     this.refresh();
   }
   update(frame: PoseFrame | null, now: number) {

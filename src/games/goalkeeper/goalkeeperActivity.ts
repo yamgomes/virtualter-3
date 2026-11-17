@@ -1,23 +1,26 @@
-import './style.css';
-import { GAME_DEFINITIONS } from '@homephysio/contracts';
 import type { Intensity } from '@homephysio/contracts';
-import { ShoulderInput } from '../../exercise/shoulderInput';
+import { GAME_DEFINITIONS } from '@homephysio/contracts';
 import type { ShoulderAngles } from '../../exercise/automaticCalibration';
-import type { GoalkeeperConfig, GameResult } from '../../session/types';
+import { ShoulderInput } from '../../exercise/shoulderInput';
+import type { GameResult, GoalkeeperConfig } from '../../session/types';
 import type { PoseFrame } from '../../tracking/types';
 import type { GameActivity, PreparationProgress } from '../contracts';
 import { GoalkeeperGame } from './goalkeeperGame';
 import { GoalkeeperScene } from './goalkeeperScene';
+import './style.css';
 
 export class GoalkeeperActivity implements GameActivity {
   readonly version = '1.1.0';
   readonly posture;
-  readonly instructions = 'Fique de frente para a câmera, com ombros, cotovelos e quadris visíveis. Comece com os braços em repouso. Depois levante cada braço até sua altura máxima confortável.';
+  readonly instructions =
+    'Fique de frente para a câmera, com ombros, cotovelos e quadris visíveis. Comece com os braços em repouso. Depois levante cada braço até sua altura máxima confortável.';
   readonly planDescription: string;
   private readonly config: GoalkeeperConfig;
   private readonly intensity?: Intensity;
   private readonly input = new ShoulderInput();
-  get shoulderMeasurementRange() { return this.input.measuredRange; }
+  get shoulderMeasurementRange() {
+    return this.input.measuredRange;
+  }
   private game: GoalkeeperGame | null = null;
   private scene: GoalkeeperScene | null = null;
   private panel: HTMLElement | null = null;
@@ -28,14 +31,21 @@ export class GoalkeeperActivity implements GameActivity {
     this.config = config;
     this.intensity = intensity;
     const { posture, defaults } = GAME_DEFINITIONS.goalkeeper;
-    this.posture = { mode: posture, tolerance: config.posture?.tolerance ?? defaults.postureTolerancePercent / 100 };
+    this.posture = {
+      mode: posture,
+      tolerance:
+        config.posture?.tolerance ?? defaults.postureTolerancePercent / 100,
+    };
     this.planDescription = `${config.repetitions} chutes · mova as luvas para defender as bolas.`;
   }
 
   calibrate(frame: PoseFrame | null, now: number): PreparationProgress {
     const progress = this.input.calibrate(frame, now);
     return {
-      title: progress.stage === 'rest' ? 'Comece em repouso.' : 'Encontre seu alcance.',
+      title:
+        progress.stage === 'rest'
+          ? 'Comece em repouso'
+          : 'Levante o máximo que puder',
       message: progress.message,
       progress: progress.progress,
       complete: !!progress.result,
@@ -53,7 +63,7 @@ export class GoalkeeperActivity implements GameActivity {
     this.angles = { left: range.left.rest, right: range.right.rest };
     this.scene = new GoalkeeperScene(stage);
     this.panel = panel;
-    panel.innerHTML = `<p class="eyebrow">GOLEIRO</p><h1>Defenda o gol.</h1>
+    panel.innerHTML = `<h1>Defenda o gol.</h1>
       <p>Mova o braço do lado da bola e leve a luva até o círculo amarelo antes que ela chegue.</p>
       <p class="goalkeeper-score" data-goalkeeper="score"></p>
       <progress data-goalkeeper="flight" max="1" value="0" aria-label="Trajeto da bola"></progress>
@@ -74,7 +84,10 @@ export class GoalkeeperActivity implements GameActivity {
     const outcome = this.game?.update(angles, now);
     if (outcome) this.feedback = outcome === 'hit' ? 'Defesa!' : 'Gol!';
     this.refresh(angles !== null);
-    return { tracking: angles !== null, completed: this.game?.completed ?? false };
+    return {
+      tracking: angles !== null,
+      completed: this.game?.completed ?? false,
+    };
   }
 
   private refresh(tracking = true): void {
@@ -82,7 +95,9 @@ export class GoalkeeperActivity implements GameActivity {
     const { hits, attempts, shots } = this.game;
     this.panel.querySelector('[data-goalkeeper="score"]')!.textContent =
       `${hits} defesas · ${attempts.length} de ${this.config.repetitions} chutes`;
-    this.panel.querySelector<HTMLProgressElement>('[data-goalkeeper="flight"]')!.value = shots[0]?.progress ?? 0;
+    this.panel.querySelector<HTMLProgressElement>(
+      '[data-goalkeeper="flight"]'
+    )!.value = shots[0]?.progress ?? 0;
     const feedback = this.panel.querySelector('[data-goalkeeper="feedback"]')!;
     const message = !tracking
       ? 'Rastreamento pausado. Enquadre os dois braços.'

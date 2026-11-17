@@ -1,9 +1,12 @@
-import './style.css';
-import type { BilateralCalibration, ShoulderAngles } from '../../exercise/automaticCalibration';
+import type {
+  BilateralCalibration,
+  ShoulderAngles,
+} from '../../exercise/automaticCalibration';
 import type { GameResult, ShoulderConfig } from '../../session/types';
 import { ShoulderGame } from './shoulderGame';
-import { ShoulderScene } from './shoulderScene';
 import type { ShoulderSceneState } from './shoulderScene';
+import { ShoulderScene } from './shoulderScene';
+import './style.css';
 
 type GameScene = { update(state: ShoulderSceneState): void; dispose(): void };
 type SceneFactory = (stage: HTMLElement) => GameScene;
@@ -29,7 +32,7 @@ export class ShoulderSession {
     this.panel = panel;
     this.scene = createScene(stage);
     panel.classList.add('shoulder-game-ui');
-    panel.innerHTML = `<p class="eyebrow">SEMÁFORO</p><h1>Encontre a pose.</h1>
+    panel.innerHTML = `<h1>Encontre a pose.</h1>
       <p>Mova os dois braços para levar as mãos do personagem aos círculos antes que o tempo acabe.</p>
       <div class="stats"><div><small>META MÍNIMA</small><strong data-field="total"></strong></div><div><small>ACERTOS</small><strong data-field="score">0</strong></div><div><small>PONTOS</small><strong data-field="points">0</strong></div></div>
       <div class="progress-label"><span>Tempo restante</span><strong data-field="time"></strong></div><progress data-field="time-progress" max="1" value="1" aria-label="Tempo restante"></progress>
@@ -85,7 +88,11 @@ export class ShoulderSession {
   }
   render(now: number): void {
     if (!this.lastAngles) return;
-    this.scene.update({ angles: this.lastAngles, goalAngles: this.game.target, now });
+    this.scene.update({
+      angles: this.lastAngles,
+      goalAngles: this.game.target,
+      now,
+    });
   }
   result(): Omit<GameResult, 'calibration'> {
     return {
@@ -104,7 +111,7 @@ export class ShoulderSession {
       this.field(`target-${side}`).textContent =
         Math.round(this.game.target[side]) + '°';
       this.field(`marker-${side}`).style.left =
-        this.game.target[side] / 180 * 100 + '%';
+        (this.game.target[side] / 180) * 100 + '%';
     }
     this.field<HTMLProgressElement>('time-progress').value =
       this.game.remainingMs /

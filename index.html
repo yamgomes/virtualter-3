@@ -15,7 +15,6 @@
       <section class="layout">
         <div class="panel">
           <div data-phase="welcome loading">
-            <p class="eyebrow">BEM-VINDO(A)</p>
             <h1>Um movimento de cada vez.</h1>
             <p>
               Digite o código da sua sessão para consultar a atividade e se
@@ -46,19 +45,21 @@
                 </button>
               </div>
             </form>
-            <button id="try-goalkeeper" class="text-button" type="button">
-              Experimentar o goleiro
-            </button>
-
+            <p class="demo-note">
+              Sem código de sessão?
+              <button id="try-demo" class="text-button" type="button">
+                Explore uma demonstração livre
+              </button>
+              Jogue sem vínculo com fisioterapeuta.
+            </p>
             <p class="fine">
               O vídeo é processado neste dispositivo. O detector precisa de
               conexão para carregar seus arquivos.
             </p>
           </div>
           <div data-phase="plan" hidden>
-            <p class="eyebrow">SUA TERAPIA</p>
             <h1>Olá, <span id="plan-name"></span>.</h1>
-            <p>Confira a atividade definida pelo seu fisioterapeuta.</p>
+            <p>Confira a atividade definida pelo seu fisioterapeuta:</p>
             <div class="plan-card">
               <span class="plan-label">ATIVIDADE</span>
               <h2 id="plan-title"></h2>
@@ -78,7 +79,6 @@
             </section>
           </div>
           <div data-phase="opening" hidden>
-            <p class="eyebrow">PREPARAÇÃO</p>
             <h1>Conectando a câmera…</h1>
             <p>
               Autorize o uso da câmera no navegador. Você pode cancelar enquanto
@@ -86,22 +86,15 @@
             </p>
           </div>
           <div data-phase="preparation-error" hidden>
-            <p class="eyebrow">PREPARAÇÃO</p>
-            <h1>Não foi possível preparar a sessão.</h1>
+            <h1>Não foi possível preparar a sessão</h1>
             <button id="retry-camera">Tentar novamente</button>
           </div>
           <div data-phase="camera" hidden>
-            <p class="eyebrow">PREPARAÇÃO</p>
             <h1>Vamos ajustar a câmera.</h1>
-            <p id="preparation-instructions"></p>
+            <p>Posicione-se no enquadramento para começar.</p>
           </div>
           <div data-phase="calibrating" hidden>
-            <p class="eyebrow">CALIBRAÇÃO</p>
-            <h1 id="calibration-title">Encontre sua posição.</h1>
-            <p id="calibration-instructions">
-              Siga as orientações da atividade; a calibração começa e avança
-              automaticamente.
-            </p>
+            <h1 id="calibration-title">Encontre sua posição</h1>
             <p class="tracking" id="tracking" aria-live="polite"></p>
             <progress
               id="calibration-progress"
@@ -110,6 +103,14 @@
               aria-label="Progresso da calibração automática"
             ></progress>
           </div>
+          <details
+            class="preparation-help"
+            data-phase="camera calibrating"
+            hidden
+          >
+            <summary>Ver instruções completas</summary>
+            <p id="preparation-instructions"></p>
+          </details>
           <div id="game-ui" data-phase="playing paused resuming" hidden></div>
           <div data-phase="playing" hidden>
             <button id="pause" class="secondary">Pausar sessão</button>
@@ -136,8 +137,7 @@
             hidden
           ></p>
           <div data-phase="summary" hidden>
-            <p class="eyebrow">SESSÃO FINALIZADA</p>
-            <h1 id="summary-title">Sessão finalizada.</h1>
+            <h1 id="summary-title">Sessão finalizada</h1>
             <p id="summary-text"></p>
             <div class="notice">
               <span id="save-status">Salvando resultado local…</span><br />Este
@@ -155,7 +155,7 @@
             data-phase="opening preparation-error camera calibrating"
             hidden
           >
-            Cancelar preparação
+            Sair do jogo
           </button>
           <p id="status" role="status" aria-live="polite"></p>
         </div>
