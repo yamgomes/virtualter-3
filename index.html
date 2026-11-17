@@ -1,25 +1,203 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <title>Virtualter 3</title>
-    <style>
-      html, body {
-        margin: 0;
-        padding: 0;
-        overflow: hidden;
-        background: #000;
-      }
-      canvas {
-        position: absolute;
-        top: 0; left: 0;
-      }
-    </style>
-    <script type="module" crossorigin src="./assets/index-ari3Kc5p.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Virtualter — sua sessão</title>
+    <script type="module" crossorigin src="./assets/index-jUqVhni9.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-BRLqHucP.css">
   </head>
   <body>
-    <div id="game-header" style="position:fixed;top:0;left:0;width:100vw;height:60px;background:#111;color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.5em;z-index:300;pointer-events:none;box-shadow:0 2px 8px #000;">
-      Virtualter 3
-    </div>
+    <main class="app">
+      <header>
+        <span class="brand">virtualter <small>protótipo local</small></span
+        ><span class="header-note">Movimento no seu ritmo</span>
+      </header>
+      <section class="layout">
+        <div class="panel">
+          <div data-phase="welcome loading">
+            <p class="eyebrow">BEM-VINDO(A)</p>
+            <h1>Um movimento de cada vez.</h1>
+            <p>
+              Digite o código da sua sessão para consultar a atividade e se
+              preparar para começar.
+            </p>
+            <div class="notice">
+              <strong>Antes de começar</strong><br />Escolha um local iluminado
+              e siga o enquadramento indicado para a atividade. Respeite seus
+              limites.
+            </div>
+
+            <form id="code-form">
+              <label for="session-code">Código da sessão</label>
+              <div class="code-entry">
+                <input
+                  id="session-code"
+                  name="code"
+                  autocomplete="off"
+                  minlength="6"
+                  maxlength="6"
+                  autocapitalize="characters"
+                  spellcheck="false"
+                  title="Digite o código fornecido pelo fisioterapeuta"
+                  required
+                  placeholder="Exemplo: BH5KN3"
+                /><button id="access-plan" type="submit">
+                  Acessar <span>→</span>
+                </button>
+              </div>
+            </form>
+            <button id="try-goalkeeper" class="text-button" type="button">
+              Experimentar o goleiro
+            </button>
+
+            <p class="fine">
+              O vídeo é processado neste dispositivo. O detector precisa de
+              conexão para carregar seus arquivos.
+            </p>
+          </div>
+          <div data-phase="plan" hidden>
+            <p class="eyebrow">SUA TERAPIA</p>
+            <h1>Olá, <span id="plan-name"></span>.</h1>
+            <p>Confira a atividade definida pelo seu fisioterapeuta.</p>
+            <div class="plan-card">
+              <span class="plan-label">ATIVIDADE</span>
+              <h2 id="plan-title"></h2>
+              <p id="plan-description"></p>
+            </div>
+            <p>Posição esperada: <strong id="expected-posture"></strong></p>
+            <button id="open-camera">
+              Preparar minha sessão <span>→</span>
+            </button>
+            <button class="text-button" id="change-code">
+              Usar outro código
+            </button>
+            <section class="history">
+              <h2>Últimas sessões neste navegador</h2>
+              <ul id="history-list"></ul>
+              <p>Histórico salvo somente neste dispositivo.</p>
+            </section>
+          </div>
+          <div data-phase="opening" hidden>
+            <p class="eyebrow">PREPARAÇÃO</p>
+            <h1>Conectando a câmera…</h1>
+            <p>
+              Autorize o uso da câmera no navegador. Você pode cancelar enquanto
+              aguarda.
+            </p>
+          </div>
+          <div data-phase="preparation-error" hidden>
+            <p class="eyebrow">PREPARAÇÃO</p>
+            <h1>Não foi possível preparar a sessão.</h1>
+            <button id="retry-camera">Tentar novamente</button>
+          </div>
+          <div data-phase="camera" hidden>
+            <p class="eyebrow">PREPARAÇÃO</p>
+            <h1>Vamos ajustar a câmera.</h1>
+            <p id="preparation-instructions"></p>
+          </div>
+          <div data-phase="calibrating" hidden>
+            <p class="eyebrow">CALIBRAÇÃO</p>
+            <h1 id="calibration-title">Encontre sua posição.</h1>
+            <p id="calibration-instructions">
+              Siga as orientações da atividade; a calibração começa e avança
+              automaticamente.
+            </p>
+            <p class="tracking" id="tracking" aria-live="polite"></p>
+            <progress
+              id="calibration-progress"
+              max="1"
+              value="0"
+              aria-label="Progresso da calibração automática"
+            ></progress>
+          </div>
+          <div id="game-ui" data-phase="playing paused resuming" hidden></div>
+          <div data-phase="playing" hidden>
+            <button id="pause" class="secondary">Pausar sessão</button>
+          </div>
+          <div data-phase="paused" hidden>
+            <p id="pause-instructions" class="notice">
+              Sessão pausada. Confira seu enquadramento antes de retomar.
+            </p>
+            <button id="resume">Retomar sessão</button>
+          </div>
+          <button
+            id="finish"
+            class="text-button"
+            data-phase="playing paused resuming"
+            hidden
+          >
+            Encerrar sessão
+          </button>
+          <p
+            id="posture-status"
+            data-phase="calibrating playing paused resuming"
+            role="status"
+            aria-live="polite"
+            hidden
+          ></p>
+          <div data-phase="summary" hidden>
+            <p class="eyebrow">SESSÃO FINALIZADA</p>
+            <h1 id="summary-title">Sessão finalizada.</h1>
+            <p id="summary-text"></p>
+            <div class="notice">
+              <span id="save-status">Salvando resultado local…</span><br />Este
+              resumo não é uma avaliação clínica.
+            </div>
+            <button id="restart">Voltar à atividade <span>→</span></button>
+          </div>
+          <p id="pending-status" data-phase="plan" hidden role="status"></p>
+          <button id="retry-save" class="secondary" hidden>
+            Tentar salvar resultados pendentes
+          </button>
+          <button
+            class="secondary cancel"
+            id="cancel"
+            data-phase="opening preparation-error camera calibrating"
+            hidden
+          >
+            Cancelar preparação
+          </button>
+          <p id="status" role="status" aria-live="polite"></p>
+        </div>
+        <aside
+          class="visual"
+          aria-label="Prévia da câmera e representação do movimento"
+        >
+          <div class="visual-copy">
+            <span>SEU ESPAÇO DE MOVIMENTO</span>
+            <h2>Comece de onde<br />você está.</h2>
+            <p>Uma sessão pensada para acompanhar o seu ritmo.</p>
+          </div>
+          <div
+            class="stage-heading"
+            data-phase="camera calibrating playing paused resuming"
+            hidden
+          >
+            <span>VIRTUALTER · ÁREA DE JOGO</span
+            ><strong>Seu movimento é o controle</strong>
+          </div>
+          <div
+            id="camera-preview"
+            class="video-wrap"
+            data-phase="camera calibrating playing paused resuming"
+            hidden
+          >
+            <video id="camera" autoplay muted playsinline></video
+            ><span class="camera-label">CÂMERA AO VIVO</span>
+            <div
+              class="resume-countdown"
+              data-phase="resuming"
+              role="status"
+              aria-atomic="true"
+              hidden
+            >
+              <span>Retomando em</span>
+              <strong id="resume-countdown-number">3</strong>
+            </div>
+          </div>
+        </aside>
+      </section>
+    </main>
   </body>
 </html>
