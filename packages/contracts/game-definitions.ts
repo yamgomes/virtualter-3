@@ -32,7 +32,7 @@ interface GameDefinition {
   storedTargetsPattern: string;
 }
 
-export const DEFAULT_GOALKEEPER_FLIGHT_MS = 1000;
+export const DEFAULT_GOALKEEPER_FLIGHT_MS = 2200;
 
 export const NUMERIC_LIMITS: Record<NumericKey, readonly [number, number]> = {
   durationSeconds: [1, 3600],
