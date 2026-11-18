@@ -25,7 +25,10 @@ export interface SessionReport {
 export function validMovementMetrics(value: unknown): value is MovementMetrics {
   if (!value || typeof value !== 'object') return false;
   const repetitions = (value as Partial<MovementMetrics>).shoulderRepetitions;
-  return !!repetitions && [repetitions.left, repetitions.right].every(
-    count => Number.isSafeInteger(count) && count >= 0
+  return (
+    !!repetitions &&
+    [repetitions.left, repetitions.right].every(
+      (count) => Number.isSafeInteger(count) && count >= 0
+    )
   );
 }

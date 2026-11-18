@@ -104,11 +104,16 @@ function setup(withPosture = false) {
     async detect() {
       if (!withPosture) return { timestamp: now, points: {}, aspectRatio: 1 };
       const point = (x: number, y: number) => ({ x, y, visibility: 1 });
-      return { timestamp: now, aspectRatio: 1, points: {
-        leftShoulder: point(0.5 - shoulderWidth / 2, 0.3),
-        rightShoulder: point(0.5 + shoulderWidth / 2, 0.3),
-        leftHip: point(0.4, 0.7), rightHip: point(0.6, 0.7),
-      } } as PoseFrame;
+      return {
+        timestamp: now,
+        aspectRatio: 1,
+        points: {
+          leftShoulder: point(0.5 - shoulderWidth / 2, 0.3),
+          rightShoulder: point(0.5 + shoulderWidth / 2, 0.3),
+          leftHip: point(0.4, 0.7),
+          rightHip: point(0.6, 0.7),
+        },
+      } as PoseFrame;
     },
     dispose() {},
   };
@@ -203,7 +208,9 @@ function setup(withPosture = false) {
     },
     getRendered: () => rendered,
     getTrackedUpdates: () => trackedUpdates,
-    setShoulderWidth: (width: number) => { shoulderWidth = width; },
+    setShoulderWidth: (width: number) => {
+      shoulderWidth = width;
+    },
   };
 }
 
@@ -230,7 +237,11 @@ test('três segundos de postura correta iniciam a contagem sem clicar em retomar
   assert.equal(countdown.textContent, '');
   await env.step(startsCountdownAt);
   assert.equal(countdown.textContent, '3');
-  for (time = startsCountdownAt + 100; time < startsCountdownAt + 3000; time += 100)
+  for (
+    time = startsCountdownAt + 100;
+    time < startsCountdownAt + 3000;
+    time += 100
+  )
     await env.step(time);
   assert.equal(env.getTrackedUpdates(), updatesAtPause);
   await env.step(startsCountdownAt + 3000);
@@ -344,5 +355,3 @@ test('falha de gravação preserva resultado e reenvio usa o mesmo ID', async ()
   assert.match(env.elements.get('save-status')!.textContent, /salvos/);
   env.controller.dispose();
 });
-
-

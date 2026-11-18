@@ -2,7 +2,7 @@ export class VideoManager {
   public video: HTMLVideoElement;
 
   constructor() {
-    this.video = document.createElement("video");
+    this.video = document.createElement('video');
     this.setupVideo();
     this.requestCamera();
   }
@@ -11,7 +11,7 @@ export class VideoManager {
     this.video.autoplay = true;
     this.video.playsInline = true;
     this.video.muted = true; // Add muted to ensure autoplay works
-    this.video.style.display = "none";
+    this.video.style.display = 'none';
     document.body.appendChild(this.video);
   }
 
@@ -22,10 +22,12 @@ export class VideoManager {
 
       // Ensure video starts playing
       this.video.addEventListener('loadedmetadata', () => {
-        this.video.play().catch(err => console.error('Video play failed:', err));
+        this.video
+          .play()
+          .catch((err) => console.error('Video play failed:', err));
       });
     } catch (error) {
-      console.error("Erro ao acessar a câmera:", error);
+      console.error('Erro ao acessar a câmera:', error);
     }
   }
 }

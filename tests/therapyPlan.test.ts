@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { defaultTherapy, intensityPreset, validTherapy } from '@homephysio/contracts';
+import {
+  defaultTherapy,
+  intensityPreset,
+  validTherapy,
+} from '@homephysio/contracts';
 import { therapyPlan } from '../src/session/therapyPlan';
 import { isSessionPlan } from '../src/session/types';
 
@@ -11,7 +15,10 @@ test('os padrões e intensidades do catálogo podem ser salvos e lidos pelo joga
     for (const intensity of ['low', 'moderate', 'high'] as const) {
       const therapy = { ...defaults, ...intensityPreset(intensity, gameId) };
       assert.equal(validTherapy(therapy), true, `${gameId}/${intensity}`);
-      assert.equal(isSessionPlan(therapyPlan('paciente-teste', 1, therapy)), true);
+      assert.equal(
+        isSessionPlan(therapyPlan('paciente-teste', 1, therapy)),
+        true
+      );
     }
   }
 });

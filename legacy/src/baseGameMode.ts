@@ -1,5 +1,5 @@
-import * as THREE from "three";
-import type { GameMode, GameModeConfig } from "./gameMode";
+import * as THREE from 'three';
+import type { GameMode, GameModeConfig } from './gameMode';
 
 /**
  * Classe base abstrata que implementa funcionalidades comuns
@@ -56,7 +56,7 @@ export abstract class BaseGameMode implements GameMode {
   public clearGoalVisualization(): void {
     if (!this.scene) return;
 
-    this.goalObjects.forEach(obj => {
+    this.goalObjects.forEach((obj) => {
       this.scene!.remove(obj);
       this.disposeObject(obj);
     });
@@ -84,7 +84,7 @@ export abstract class BaseGameMode implements GameMode {
         }
         if (child.material) {
           if (Array.isArray(child.material)) {
-            child.material.forEach(material => material.dispose());
+            child.material.forEach((material) => material.dispose());
           } else {
             child.material.dispose();
           }
@@ -96,7 +96,11 @@ export abstract class BaseGameMode implements GameMode {
   /**
    * Verifica se dois valores estão dentro de uma tolerância
    */
-  public isWithinTolerance(value1: number, value2: number, tolerance: number): boolean {
+  public isWithinTolerance(
+    value1: number,
+    value2: number,
+    tolerance: number
+  ): boolean {
     return Math.abs(value1 - value2) <= tolerance;
   }
 
@@ -121,7 +125,10 @@ export abstract class BaseGameMode implements GameMode {
   /**
    * Converte coordenadas de pose normalizadas para coordenadas de tela
    */
-  protected poseToScreenCoords(poseX: number, poseY: number): { x: number; y: number } {
+  protected poseToScreenCoords(
+    poseX: number,
+    poseY: number
+  ): { x: number; y: number } {
     // As coordenadas de pose vêm normalizadas (0-1)
     // Converte para coordenadas de tela 3D
     const screenX = (poseX - 0.5) * 10; // Ajusta a escala conforme necessário
@@ -133,7 +140,11 @@ export abstract class BaseGameMode implements GameMode {
   /**
    * Cria uma esfera básica para visualizações
    */
-  protected createSphere(radius: number, color: number, position?: THREE.Vector3): THREE.Mesh {
+  protected createSphere(
+    radius: number,
+    color: number,
+    position?: THREE.Vector3
+  ): THREE.Mesh {
     const geometry = new THREE.SphereGeometry(radius, 16, 16);
     const material = new THREE.MeshBasicMaterial({ color });
     const sphere = new THREE.Mesh(geometry, material);
@@ -148,7 +159,11 @@ export abstract class BaseGameMode implements GameMode {
   /**
    * Cria um cubo básico para visualizações
    */
-  protected createCube(size: number, color: number, position?: THREE.Vector3): THREE.Mesh {
+  protected createCube(
+    size: number,
+    color: number,
+    position?: THREE.Vector3
+  ): THREE.Mesh {
     const geometry = new THREE.BoxGeometry(size, size, size);
     const material = new THREE.MeshBasicMaterial({ color });
     const cube = new THREE.Mesh(geometry, material);

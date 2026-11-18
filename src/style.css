@@ -648,7 +648,8 @@ body.camera-active {
   gap: 16px;
   margin: 20px 0;
 }
-.demo-setup select, .demo-setup input {
+.demo-setup select,
+.demo-setup input {
   width: 100%;
   box-sizing: border-box;
   padding: 12px;
@@ -658,5 +659,11 @@ body.camera-active {
   color: #173f36;
   font: inherit;
 }
-.demo-setup label, .demo-setup small { display: block; margin-bottom: 6px; }
-.demo-setup [role="alert"] { color: #a53232; }
+.demo-setup label,
+.demo-setup small {
+  display: block;
+  margin-bottom: 6px;
+}
+.demo-setup [role='alert'] {
+  color: #a53232;
+}

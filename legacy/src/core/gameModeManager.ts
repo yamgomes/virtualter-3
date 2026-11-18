@@ -1,8 +1,8 @@
-import type { GameMode, GameModeMetadata } from "../gameMode";
-import { ArmAngleGameMode } from "../games/armAngleGameMode";
-import { SurfingGameMode } from "../games/surfingGameMode";
-import { SitStandGameMode } from "../games/sitStandGameMode";
-import { SwimmingGameMode } from "../games/swimmingGameMode";
+import type { GameMode, GameModeMetadata } from '../gameMode';
+import { ArmAngleGameMode } from '../games/armAngleGameMode';
+import { SurfingGameMode } from '../games/surfingGameMode';
+import { SitStandGameMode } from '../games/sitStandGameMode';
+import { SwimmingGameMode } from '../games/swimmingGameMode';
 
 /**
  * Gerenciador central para todos os modos de jogo
@@ -32,44 +32,48 @@ export class GameModeManager {
    */
   private registerDefaultModes(): void {
     this.registerMode({
-      name: "arm-angles",
-      displayName: "Ângulos dos Braços",
-      description: "Posicione seus braços nos ângulos indicados pelas esferas coloridas",
-      category: "fitness",
-      difficulty: "easy",
-      bodyParts: ["braços", "ombros"],
-      constructor: ArmAngleGameMode
+      name: 'arm-angles',
+      displayName: 'Ângulos dos Braços',
+      description:
+        'Posicione seus braços nos ângulos indicados pelas esferas coloridas',
+      category: 'fitness',
+      difficulty: 'easy',
+      bodyParts: ['braços', 'ombros'],
+      constructor: ArmAngleGameMode,
     });
 
     // Registrar novos jogos (placeholder)
     this.registerMode({
-      name: "surfing",
-      displayName: "Simulador de Surfe",
-      description: "Simule movimentos de surfe para manter o equilíbrio na prancha virtual",
-      category: "entertainment",
-      difficulty: "medium",
-      bodyParts: ["corpo todo", "equilíbrio"],
-      constructor: SurfingGameMode
+      name: 'surfing',
+      displayName: 'Simulador de Surfe',
+      description:
+        'Simule movimentos de surfe para manter o equilíbrio na prancha virtual',
+      category: 'entertainment',
+      difficulty: 'medium',
+      bodyParts: ['corpo todo', 'equilíbrio'],
+      constructor: SurfingGameMode,
     });
 
     this.registerMode({
-      name: "sit-stand",
-      displayName: "Sentar e Levantar",
-      description: "Realize exercícios de sentar e levantar seguindo o ritmo indicado",
-      category: "rehabilitation",
-      difficulty: "easy",
-      bodyParts: ["pernas", "quadris", "core"],
-      constructor: SitStandGameMode
+      name: 'sit-stand',
+      displayName: 'Sentar e Levantar',
+      description:
+        'Realize exercícios de sentar e levantar seguindo o ritmo indicado',
+      category: 'rehabilitation',
+      difficulty: 'easy',
+      bodyParts: ['pernas', 'quadris', 'core'],
+      constructor: SitStandGameMode,
     });
 
     this.registerMode({
-      name: "swimming",
-      displayName: "Simulador de Natação",
-      description: "Simule diferentes estilos de natação com movimentos coordenados",
-      category: "fitness",
-      difficulty: "hard",
-      bodyParts: ["braços", "corpo todo", "coordenação"],
-      constructor: SwimmingGameMode
+      name: 'swimming',
+      displayName: 'Simulador de Natação',
+      description:
+        'Simule diferentes estilos de natação com movimentos coordenados',
+      category: 'fitness',
+      difficulty: 'hard',
+      bodyParts: ['braços', 'corpo todo', 'coordenação'],
+      constructor: SwimmingGameMode,
     });
   }
 
@@ -78,7 +82,9 @@ export class GameModeManager {
    */
   public registerMode(metadata: GameModeMetadata): void {
     if (this.registeredModes.has(metadata.name)) {
-      console.warn(`Modo de jogo '${metadata.name}' já está registrado. Sobrescrevendo...`);
+      console.warn(
+        `Modo de jogo '${metadata.name}' já está registrado. Sobrescrevendo...`
+      );
     }
 
     this.registeredModes.set(metadata.name, metadata);
@@ -113,15 +119,23 @@ export class GameModeManager {
   /**
    * Filtra modos por categoria
    */
-  public getModesByCategory(category: 'fitness' | 'rehabilitation' | 'entertainment'): GameModeMetadata[] {
-    return this.getAvailableModes().filter(mode => mode.category === category);
+  public getModesByCategory(
+    category: 'fitness' | 'rehabilitation' | 'entertainment'
+  ): GameModeMetadata[] {
+    return this.getAvailableModes().filter(
+      (mode) => mode.category === category
+    );
   }
 
   /**
    * Filtra modos por dificuldade
    */
-  public getModesByDifficulty(difficulty: 'easy' | 'medium' | 'hard'): GameModeMetadata[] {
-    return this.getAvailableModes().filter(mode => mode.difficulty === difficulty);
+  public getModesByDifficulty(
+    difficulty: 'easy' | 'medium' | 'hard'
+  ): GameModeMetadata[] {
+    return this.getAvailableModes().filter(
+      (mode) => mode.difficulty === difficulty
+    );
   }
 
   /**
@@ -187,13 +201,13 @@ export class GameModeManager {
     difficulty: string;
     bodyParts: string[];
   }> {
-    return this.getAvailableModes().map(mode => ({
+    return this.getAvailableModes().map((mode) => ({
       name: mode.name,
       displayName: mode.displayName,
       description: mode.description,
       category: mode.category,
       difficulty: mode.difficulty,
-      bodyParts: mode.bodyParts
+      bodyParts: mode.bodyParts,
     }));
   }
 
@@ -226,20 +240,26 @@ export class GameModeManager {
   } {
     const modes = this.getAvailableModes();
 
-    const byCategory = modes.reduce((acc, mode) => {
-      acc[mode.category] = (acc[mode.category] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    const byCategory = modes.reduce(
+      (acc, mode) => {
+        acc[mode.category] = (acc[mode.category] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
 
-    const byDifficulty = modes.reduce((acc, mode) => {
-      acc[mode.difficulty] = (acc[mode.difficulty] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    const byDifficulty = modes.reduce(
+      (acc, mode) => {
+        acc[mode.difficulty] = (acc[mode.difficulty] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
 
     return {
       totalModes: modes.length,
       byCategory,
-      byDifficulty
+      byDifficulty,
     };
   }
 }

@@ -30,7 +30,12 @@ function mesh(geometry: THREE.BufferGeometry, color: number) {
   return new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ color }));
 }
 
-function fit(model: THREE.Object3D, axis: 'x' | 'y', size: number, grounded = false) {
+function fit(
+  model: THREE.Object3D,
+  axis: 'x' | 'y',
+  size: number,
+  grounded = false
+) {
   const box = new THREE.Box3().setFromObject(model);
   const center = box.getCenter(new THREE.Vector3());
   if (grounded) center.y = box.min.y;
@@ -50,7 +55,9 @@ function dispose(root: THREE.Object3D) {
   root.traverse((object) => {
     if (!(object instanceof THREE.Mesh)) return;
     geometries.add(object.geometry);
-    for (const material of Array.isArray(object.material) ? object.material : [object.material]) {
+    for (const material of Array.isArray(object.material)
+      ? object.material
+      : [object.material]) {
       materials.add(material);
       for (const value of Object.values(material)) {
         if (value instanceof THREE.Texture) textures.add(value);
@@ -61,7 +68,10 @@ function dispose(root: THREE.Object3D) {
   for (const geometry of geometries) geometry.dispose();
   for (const material of materials) material.dispose();
   for (const texture of textures) {
-    if (typeof ImageBitmap !== 'undefined' && texture.source.data instanceof ImageBitmap)
+    if (
+      typeof ImageBitmap !== 'undefined' &&
+      texture.source.data instanceof ImageBitmap
+    )
       texture.source.data.close();
     texture.dispose();
   }
@@ -70,17 +80,33 @@ function dispose(root: THREE.Object3D) {
 
 export class GoalkeeperScene {
   private readonly scene = new THREE.Scene();
-  private readonly camera = new THREE.OrthographicCamera(-1, 1, 0.6, -0.6, 0.1, 10);
-  private readonly renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+  private readonly camera = new THREE.OrthographicCamera(
+    -1,
+    1,
+    0.6,
+    -0.6,
+    0.1,
+    10
+  );
+  private readonly renderer = new THREE.WebGLRenderer({
+    alpha: true,
+    antialias: true,
+  });
   private readonly loader = new GLTFLoader();
   private readonly goal = new THREE.Group();
   private readonly player = new THREE.Group();
   private readonly balls = [new THREE.Group(), new THREE.Group()];
-  private readonly gloves = { left: new THREE.Group(), right: new THREE.Group() };
-  private readonly markers = this.balls.map(() => new THREE.Mesh(
-    new THREE.RingGeometry(0.063, 0.076, 32),
-    new THREE.MeshBasicMaterial({ color: 0xffd866 })
-  ));
+  private readonly gloves = {
+    left: new THREE.Group(),
+    right: new THREE.Group(),
+  };
+  private readonly markers = this.balls.map(
+    () =>
+      new THREE.Mesh(
+        new THREE.RingGeometry(0.063, 0.076, 32),
+        new THREE.MeshBasicMaterial({ color: 0xffd866 })
+      )
+  );
   private readonly observer: ResizeObserver;
   private readonly stage: HTMLElement;
   private disposed = false;
@@ -96,9 +122,16 @@ export class GoalkeeperScene {
     light.position.set(1, 2, 3);
     const fill = new THREE.DirectionalLight(0xe4f0ff, 0.7);
     fill.position.set(-2, 1, 2);
-    this.scene.add(new THREE.HemisphereLight(0xe1f1ff, 0x9cb49d, 2), light, fill);
+    this.scene.add(
+      new THREE.HemisphereLight(0xe1f1ff, 0x9cb49d, 2),
+      light,
+      fill
+    );
 
-    const post = mesh(new THREE.BoxGeometry(0.026, GOAL_HEIGHT, 0.035), 0xffffff);
+    const post = mesh(
+      new THREE.BoxGeometry(0.026, GOAL_HEIGHT, 0.035),
+      0xffffff
+    );
     post.position.set(-0.84, GOAL_HEIGHT / 2, 0);
     const rightPost = post.clone();
     rightPost.position.x = 0.84;
@@ -118,12 +151,27 @@ export class GoalkeeperScene {
       ball.visible = false;
     }
     for (const marker of this.markers) marker.visible = false;
-    this.gloves.left.add(mesh(new THREE.SphereGeometry(0.055, 16, 12), 0x3acaff));
-    this.gloves.right.add(mesh(new THREE.SphereGeometry(0.055, 16, 12), 0xff777f));
-    this.scene.add(this.goal, this.player, this.gloves.left, this.gloves.right, ...this.balls, ...this.markers);
+    this.gloves.left.add(
+      mesh(new THREE.SphereGeometry(0.055, 16, 12), 0x3acaff)
+    );
+    this.gloves.right.add(
+      mesh(new THREE.SphereGeometry(0.055, 16, 12), 0xff777f)
+    );
+    this.scene.add(
+      this.goal,
+      this.player,
+      this.gloves.left,
+      this.gloves.right,
+      ...this.balls,
+      ...this.markers
+    );
 
-    void this.load(goalUrl, (model) => this.replace(this.goal, fit(model, 'x', 1.7, true)));
-    void this.load(playerUrl, (model) => this.replace(this.player, fit(model, 'y', PLAYER_HEIGHT, true)));
+    void this.load(goalUrl, (model) =>
+      this.replace(this.goal, fit(model, 'x', 1.7, true))
+    );
+    void this.load(playerUrl, (model) =>
+      this.replace(this.player, fit(model, 'y', PLAYER_HEIGHT, true))
+    );
     void this.load(ballUrl, (model) => {
       const fitted = fit(model, 'y', 0.104);
       this.replace(this.balls[0], fitted);
@@ -141,7 +189,10 @@ export class GoalkeeperScene {
     this.resize();
   }
 
-  private async load(url: string, use: (model: THREE.Group) => void): Promise<void> {
+  private async load(
+    url: string,
+    use: (model: THREE.Group) => void
+  ): Promise<void> {
     try {
       const { scene } = await this.loader.loadAsync(url);
       if (this.disposed) dispose(scene);
@@ -162,8 +213,8 @@ export class GoalkeeperScene {
     const height = this.stage.clientHeight || 1;
     const aspect = width / height;
     const viewHeight = Math.max(1.52, 1.96 / aspect);
-    this.camera.left = -viewHeight * aspect / 2;
-    this.camera.right = viewHeight * aspect / 2;
+    this.camera.left = (-viewHeight * aspect) / 2;
+    this.camera.right = (viewHeight * aspect) / 2;
     this.camera.top = viewHeight / 2;
     this.camera.bottom = -viewHeight / 2;
     this.camera.updateProjectionMatrix();
@@ -186,7 +237,11 @@ export class GoalkeeperScene {
       const { x, y } = glovePose(shot.side, shot.degrees);
       marker.position.set(x, y, -0.015);
       marker.scale.setScalar(1 + (1 - progress) * 0.32);
-      ball.position.set(x * progress, THREE.MathUtils.lerp(0.52, y, progress), 1 - progress);
+      ball.position.set(
+        x * progress,
+        THREE.MathUtils.lerp(0.52, y, progress),
+        1 - progress
+      );
       ball.scale.setScalar(1.55 - progress * 0.55);
       ball.rotation.set(now / 440, now / 610, 0);
     });

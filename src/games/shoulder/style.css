@@ -1,17 +1,99 @@
-.shoulder-game-stage { background:radial-gradient(circle at 50% 42%,#344969,#101a30 75%) }
-.shoulder-game-stage video { opacity:.18; filter:saturate(.7) }
-.shoulder-game-stage canvas.shoulder-game-canvas { position:absolute; inset:0; width:100%; height:100%; opacity:1; z-index:1; pointer-events:none }
-.shoulder-game-ui .stats{display:flex;gap:18px;flex-wrap:wrap;border-top:1px solid #ffffff22;border-bottom:1px solid #ffffff22;padding:12px 0;margin:12px 0}
-.shoulder-game-ui .stats small{display:block;color:#a3b9d4;font-size:9px;letter-spacing:1.5px}
-.shoulder-game-ui .stats strong{font-size:25px}
-.shoulder-game-ui .target-track{position:relative}
-.shoulder-game-ui .target-track progress{display:block}
-.shoulder-game-ui .target-marker{position:absolute;top:5px;height:19px;width:4px;background:#e99b36;border:1px solid #fff;border-radius:3px;transform:translateX(-50%);pointer-events:none}
-.shoulder-game-ui .arm-target{margin-top:6px}
-.shoulder-game-ui .arm-target:last-of-type progress{accent-color:#ff809b}
-.shoulder-game-legend{width:100%;display:flex;align-items:center;gap:15px;flex-wrap:wrap;color:#e3edff;font-weight:800;font-size:11px;letter-spacing:1px}
-.shoulder-game-legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px}
-.shoulder-game-legend .legend-blue{background:#39c8ff;box-shadow:0 0 12px #39c8ff}
-.shoulder-game-legend .legend-pink{background:#ff6e89;box-shadow:0 0 12px #ff6e89}
-.shoulder-game-legend small{margin-left:auto;color:#aabbd7;font-size:11px;font-weight:500;letter-spacing:0}
-@media(max-width:800px){.shoulder-game-ui .stats{gap:25px}.shoulder-game-legend small{width:100%;margin-left:0}}
+.shoulder-game-stage {
+  background: radial-gradient(circle at 50% 42%, #344969, #101a30 75%);
+}
+.shoulder-game-stage video {
+  opacity: 0.18;
+  filter: saturate(0.7);
+}
+.shoulder-game-stage canvas.shoulder-game-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 1;
+  z-index: 1;
+  pointer-events: none;
+}
+.shoulder-game-ui .stats {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+  border-top: 1px solid #ffffff22;
+  border-bottom: 1px solid #ffffff22;
+  padding: 12px 0;
+  margin: 12px 0;
+}
+.shoulder-game-ui .stats small {
+  display: block;
+  color: #a3b9d4;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+}
+.shoulder-game-ui .stats strong {
+  font-size: 25px;
+}
+.shoulder-game-ui .target-track {
+  position: relative;
+}
+.shoulder-game-ui .target-track progress {
+  display: block;
+}
+.shoulder-game-ui .target-marker {
+  position: absolute;
+  top: 5px;
+  height: 19px;
+  width: 4px;
+  background: #e99b36;
+  border: 1px solid #fff;
+  border-radius: 3px;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.shoulder-game-ui .arm-target {
+  margin-top: 6px;
+}
+.shoulder-game-ui .arm-target:last-of-type progress {
+  accent-color: #ff809b;
+}
+.shoulder-game-legend {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  flex-wrap: wrap;
+  color: #e3edff;
+  font-weight: 800;
+  font-size: 11px;
+  letter-spacing: 1px;
+}
+.shoulder-game-legend i {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 5px;
+}
+.shoulder-game-legend .legend-blue {
+  background: #39c8ff;
+  box-shadow: 0 0 12px #39c8ff;
+}
+.shoulder-game-legend .legend-pink {
+  background: #ff6e89;
+  box-shadow: 0 0 12px #ff6e89;
+}
+.shoulder-game-legend small {
+  margin-left: auto;
+  color: #aabbd7;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+@media (max-width: 800px) {
+  .shoulder-game-ui .stats {
+    gap: 25px;
+  }
+  .shoulder-game-legend small {
+    width: 100%;
+    margin-left: 0;
+  }
+}

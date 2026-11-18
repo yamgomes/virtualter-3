@@ -27,6 +27,7 @@ O Nome Temporário agora possui um sistema modular que permite a criação e sel
 ## Jogos Implementados
 
 ### 1. Ângulos dos Braços (Funcional)
+
 - **Arquivo**: `src/gameModes/armAngleGameMode.ts`
 - **Descrição**: Posicione seus braços nos ângulos indicados pelas esferas coloridas
 - **Categoria**: Fitness
@@ -34,6 +35,7 @@ O Nome Temporário agora possui um sistema modular que permite a criação e sel
 - **Status**: ✅ Totalmente implementado
 
 ### 2. Simulador de Surfe (Placeholder)
+
 - **Arquivo**: `src/gameModes/surfingGameMode.ts`
 - **Descrição**: Simule movimentos de surfe para manter o equilíbrio
 - **Categoria**: Entretenimento
@@ -41,6 +43,7 @@ O Nome Temporário agora possui um sistema modular que permite a criação e sel
 - **Status**: 🚧 Estrutura criada, lógica pendente
 
 ### 3. Sentar e Levantar (Placeholder)
+
 - **Arquivo**: `src/gameModes/sitStandGameMode.ts`
 - **Descrição**: Realize exercícios de sentar e levantar
 - **Categoria**: Reabilitação
@@ -48,6 +51,7 @@ O Nome Temporário agora possui um sistema modular que permite a criação e sel
 - **Status**: 🚧 Estrutura criada, lógica pendente
 
 ### 4. Simulador de Natação (Placeholder)
+
 - **Arquivo**: `src/gameModes/swimmingGameMode.ts`
 - **Descrição**: Simule diferentes estilos de natação
 - **Categoria**: Fitness
@@ -59,13 +63,13 @@ O Nome Temporário agora possui um sistema modular que permite a criação e sel
 ### 1. Criar a Classe do Jogo
 
 ```typescript
-import { BaseGameMode } from "../baseGameMode";
-import type { GameModeConfig } from "../gameMode";
+import { BaseGameMode } from '../baseGameMode';
+import type { GameModeConfig } from '../gameMode';
 
 export class MeuNovoJogo extends BaseGameMode {
-  readonly name = "meu-jogo";
-  readonly displayName = "Meu Novo Jogo";
-  readonly description = "Descrição do meu jogo";
+  readonly name = 'meu-jogo';
+  readonly displayName = 'Meu Novo Jogo';
+  readonly description = 'Descrição do meu jogo';
 
   public createGoal(): MeuObjetivo {
     // Implementar criação de objetivos
@@ -95,13 +99,13 @@ No arquivo `src/gameModeManager.ts`, adicione o registro:
 
 ```typescript
 this.registerMode({
-  name: "meu-jogo",
-  displayName: "Meu Novo Jogo",
-  description: "Descrição do meu jogo",
-  category: "fitness", // ou "rehabilitation" ou "entertainment"
-  difficulty: "easy",   // ou "medium" ou "hard"
-  bodyParts: ["braços", "pernas"],
-  constructor: MeuNovoJogo
+  name: 'meu-jogo',
+  displayName: 'Meu Novo Jogo',
+  description: 'Descrição do meu jogo',
+  category: 'fitness', // ou "rehabilitation" ou "entertainment"
+  difficulty: 'easy', // ou "medium" ou "hard"
+  bodyParts: ['braços', 'pernas'],
+  constructor: MeuNovoJogo,
 });
 ```
 

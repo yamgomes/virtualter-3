@@ -1,6 +1,6 @@
-import * as THREE from "three";
-import type { Goal } from "./goals";
-import { createGoal } from "./goals";
+import * as THREE from 'three';
+import type { Goal } from './goals';
+import { createGoal } from './goals';
 
 export interface GoalBall {
   mesh: THREE.Mesh;
@@ -33,7 +33,10 @@ export class GoalManager {
     this.scene = scene;
   }
 
-  public setCallbacks(onGoalReached?: (goal: Goal) => void, onGoalCompleted?: () => void): void {
+  public setCallbacks(
+    onGoalReached?: (goal: Goal) => void,
+    onGoalCompleted?: () => void
+  ): void {
     this.onGoalReached = onGoalReached;
     this.onGoalCompleted = onGoalCompleted;
   }
@@ -47,7 +50,7 @@ export class GoalManager {
   }
 
   private clearCurrentGoal(): void {
-    this.goalBalls.forEach(ball => {
+    this.goalBalls.forEach((ball) => {
       this.scene.remove(ball.mesh);
       // Don't dispose geometry and materials - we'll reuse them
     });
@@ -91,7 +94,7 @@ export class GoalManager {
       isLeft: true,
       startPosition: leftStartPos.clone(),
       currentPosition: leftStartPos.clone(),
-      speed: this.ballSpeed
+      speed: this.ballSpeed,
     };
 
     const rightGoalBall: GoalBall = {
@@ -100,7 +103,7 @@ export class GoalManager {
       isLeft: false,
       startPosition: rightStartPos.clone(),
       currentPosition: rightStartPos.clone(),
-      speed: this.ballSpeed
+      speed: this.ballSpeed,
     };
 
     this.goalBalls.push(leftGoalBall, rightGoalBall);
@@ -113,7 +116,7 @@ export class GoalManager {
 
     let allBallsReachedCenter = true;
 
-    this.goalBalls.forEach(ball => {
+    this.goalBalls.forEach((ball) => {
       // Move ball toward center
       const direction = new THREE.Vector3()
         .subVectors(this.screenCenter, ball.currentPosition)
@@ -123,8 +126,11 @@ export class GoalManager {
       ball.mesh.position.copy(ball.currentPosition);
 
       // Check if ball reached center
-      const distanceToCenter = ball.currentPosition.distanceTo(this.screenCenter);
-      if (distanceToCenter > 0.3) { // Reduced from 0.5 for faster detection
+      const distanceToCenter = ball.currentPosition.distanceTo(
+        this.screenCenter
+      );
+      if (distanceToCenter > 0.3) {
+        // Reduced from 0.5 for faster detection
         allBallsReachedCenter = false;
       }
     });
@@ -147,22 +153,33 @@ export class GoalManager {
 
     // Calculate current arm angles
     const leftArmAngle = this.calculateArmAngle(leftShoulder, leftWrist, true);
-    const rightArmAngle = this.calculateArmAngle(rightShoulder, rightWrist, false);
+    const rightArmAngle = this.calculateArmAngle(
+      rightShoulder,
+      rightWrist,
+      false
+    );
 
     // Check if arms match goal angles (with tolerance)
     const tolerance = 25; // Increased tolerance from 20 degrees for easier/faster completion
-    const leftMatch = Math.abs(leftArmAngle - this.currentGoal.leftArm) < tolerance;
-    const rightMatch = Math.abs(rightArmAngle - this.currentGoal.rightArm) < tolerance;
+    const leftMatch =
+      Math.abs(leftArmAngle - this.currentGoal.leftArm) < tolerance;
+    const rightMatch =
+      Math.abs(rightArmAngle - this.currentGoal.rightArm) < tolerance;
 
     return leftMatch && rightMatch;
   }
 
-  private calculateArmAngle(shoulder: any, wrist: any, isLeft: boolean): number {
+  private calculateArmAngle(
+    shoulder: any,
+    wrist: any,
+    isLeft: boolean
+  ): number {
     const deltaX = wrist.x - shoulder.x;
     const deltaY = wrist.y - shoulder.y;
 
     // Calculate angle in degrees
-    let angle = Math.atan2(-deltaY, isLeft ? -deltaX : deltaX) * 180 / Math.PI;
+    let angle =
+      (Math.atan2(-deltaY, isLeft ? -deltaX : deltaX) * 180) / Math.PI;
 
     // Normalize to 0-360 range
     if (angle < 0) angle += 360;

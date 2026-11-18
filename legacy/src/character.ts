@@ -1,4 +1,4 @@
-import * as THREE from "three";
+import * as THREE from 'three';
 
 export interface CharacterConfig {
   headRadius: number;
@@ -36,15 +36,29 @@ export class Character {
 
   // Define which landmarks get spheres (excluding face landmarks 1-10)
   private readonly sphereLandmarks = [
-    0,  // nose (head)
-    11, 12, // shoulders
-    13, 14, // elbows
-    15, 16, // wrists
-    17, 18, 19, 20, 21, 22, // hands
-    23, 24, // hips
-    25, 26, // knees
-    27, 28, // ankles
-    29, 30, 31, 32 // feet
+    0, // nose (head)
+    11,
+    12, // shoulders
+    13,
+    14, // elbows
+    15,
+    16, // wrists
+    17,
+    18,
+    19,
+    20,
+    21,
+    22, // hands
+    23,
+    24, // hips
+    25,
+    26, // knees
+    27,
+    28, // ankles
+    29,
+    30,
+    31,
+    32, // feet
   ];
 
   // Define bone connections between landmarks
@@ -56,18 +70,32 @@ export class Character {
     { start: 23, end: 24 }, // Hips
 
     // Arms
-    { start: 11, end: 13 }, { start: 13, end: 15 }, // Left arm
-    { start: 12, end: 14 }, { start: 14, end: 16 }, // Right arm
+    { start: 11, end: 13 },
+    { start: 13, end: 15 }, // Left arm
+    { start: 12, end: 14 },
+    { start: 14, end: 16 }, // Right arm
 
     // Hands
-    { start: 15, end: 17 }, { start: 15, end: 19 }, { start: 15, end: 21 }, // Left hand
-    { start: 16, end: 18 }, { start: 16, end: 20 }, { start: 16, end: 22 }, // Right hand
-    { start: 17, end: 19 }, { start: 19, end: 21 }, // Left hand connections
-    { start: 18, end: 20 }, { start: 20, end: 22 }, // Right hand connections
+    { start: 15, end: 17 },
+    { start: 15, end: 19 },
+    { start: 15, end: 21 }, // Left hand
+    { start: 16, end: 18 },
+    { start: 16, end: 20 },
+    { start: 16, end: 22 }, // Right hand
+    { start: 17, end: 19 },
+    { start: 19, end: 21 }, // Left hand connections
+    { start: 18, end: 20 },
+    { start: 20, end: 22 }, // Right hand connections
 
     // Legs
-    { start: 23, end: 25 }, { start: 25, end: 27 }, { start: 27, end: 29 }, { start: 27, end: 31 }, // Left leg
-    { start: 24, end: 26 }, { start: 26, end: 28 }, { start: 28, end: 30 }, { start: 28, end: 32 }, // Right leg
+    { start: 23, end: 25 },
+    { start: 25, end: 27 },
+    { start: 27, end: 29 },
+    { start: 27, end: 31 }, // Left leg
+    { start: 24, end: 26 },
+    { start: 26, end: 28 },
+    { start: 28, end: 30 },
+    { start: 28, end: 32 }, // Right leg
   ];
 
   constructor(scene: THREE.Scene, config?: Partial<CharacterConfig>) {
@@ -85,27 +113,35 @@ export class Character {
 
   private mergeConfig(userConfig?: Partial<CharacterConfig>): CharacterConfig {
     const defaultConfig: CharacterConfig = {
-      headRadius: .6,
+      headRadius: 0.6,
       jointRadius: 0.05,
       boneRadius: 0.01,
       scale: { x: 8, y: 6, z: 2 },
       colors: {
-        head: 0xff6b6b,   // Red
-        arms: 0x4ecdc4,   // Teal
-        torso: 0x45b7d1,  // Blue
-        legs: 0x96ceb4,   // Green
-        hands: 0xfeca57,  // Yellow
-        feet: 0xff9ff3,   // Pink
-        bones: 0xffffff   // White
-      }
+        head: 0xff6b6b, // Red
+        arms: 0x4ecdc4, // Teal
+        torso: 0x45b7d1, // Blue
+        legs: 0x96ceb4, // Green
+        hands: 0xfeca57, // Yellow
+        feet: 0xff9ff3, // Pink
+        bones: 0xffffff, // White
+      },
     };
 
     return { ...defaultConfig, ...userConfig };
   }
 
   private createSpheres(): void {
-    const sphereGeometry = new THREE.SphereGeometry(this.config.jointRadius, 16, 16);
-    const headGeometry = new THREE.SphereGeometry(this.config.headRadius, 16, 16);
+    const sphereGeometry = new THREE.SphereGeometry(
+      this.config.jointRadius,
+      16,
+      16
+    );
+    const headGeometry = new THREE.SphereGeometry(
+      this.config.headRadius,
+      16,
+      16
+    );
 
     // Create materials
     const materials = {
@@ -114,7 +150,7 @@ export class Character {
       torso: new THREE.MeshBasicMaterial({ color: this.config.colors.torso }),
       legs: new THREE.MeshBasicMaterial({ color: this.config.colors.legs }),
       hands: new THREE.MeshBasicMaterial({ color: this.config.colors.hands }),
-      feet: new THREE.MeshBasicMaterial({ color: this.config.colors.feet })
+      feet: new THREE.MeshBasicMaterial({ color: this.config.colors.feet }),
     };
 
     // Create sphere for each landmark that should be visible
@@ -142,11 +178,16 @@ export class Character {
   }
 
   private createBones(): void {
-    const boneGeometry = new THREE.CylinderGeometry(this.config.boneRadius, this.config.boneRadius, 1, 8);
+    const boneGeometry = new THREE.CylinderGeometry(
+      this.config.boneRadius,
+      this.config.boneRadius,
+      1,
+      8
+    );
     const boneMaterial = new THREE.MeshBasicMaterial({
       color: this.config.colors.bones,
       opacity: 0.7,
-      transparent: true
+      transparent: true,
     });
 
     this.boneConnections.forEach(() => {
@@ -197,10 +238,11 @@ export class Character {
 
   private updateBonePositions(landmarks: any[]): void {
     this.boneConnections.forEach((connection, boneIndex) => {
-      if (boneIndex < this.bones.length &&
+      if (
+        boneIndex < this.bones.length &&
         connection.start < landmarks.length &&
-        connection.end < landmarks.length) {
-
+        connection.end < landmarks.length
+      ) {
         const startLandmark = landmarks[connection.start];
         const endLandmark = landmarks[connection.end];
 
@@ -208,7 +250,9 @@ export class Character {
         const endPos = this.landmarkToWorldPosition(endLandmark);
 
         // Position bone at midpoint
-        const midPoint = new THREE.Vector3().addVectors(startPos, endPos).multiplyScalar(0.5);
+        const midPoint = new THREE.Vector3()
+          .addVectors(startPos, endPos)
+          .multiplyScalar(0.5);
         this.bones[boneIndex].position.copy(midPoint);
 
         // Calculate direction vector
@@ -228,7 +272,10 @@ export class Character {
 
           // Create a quaternion that rotates from Y-axis to the direction vector
           const up = new THREE.Vector3(0, 1, 0);
-          const quaternion = new THREE.Quaternion().setFromUnitVectors(up, direction);
+          const quaternion = new THREE.Quaternion().setFromUnitVectors(
+            up,
+            direction
+          );
           this.bones[boneIndex].setRotationFromQuaternion(quaternion);
         }
       }
@@ -261,7 +308,9 @@ export class Character {
     );
   }
 
-  public show(position?: THREE.Vector3 | { x: number; y: number; z: number }): void {
+  public show(
+    position?: THREE.Vector3 | { x: number; y: number; z: number }
+  ): void {
     // Set position if provided
     if (position) {
       if (position instanceof THREE.Vector3) {
@@ -271,10 +320,10 @@ export class Character {
       }
     }
 
-    this.spheres.forEach(sphere => {
+    this.spheres.forEach((sphere) => {
       if (sphere) sphere.visible = true;
     });
-    this.bones.forEach(bone => {
+    this.bones.forEach((bone) => {
       bone.visible = true;
     });
 
@@ -286,10 +335,10 @@ export class Character {
   }
 
   public hide(): void {
-    this.spheres.forEach(sphere => {
+    this.spheres.forEach((sphere) => {
       if (sphere) sphere.visible = false;
     });
-    this.bones.forEach(bone => {
+    this.bones.forEach((bone) => {
       bone.visible = false;
     });
 
@@ -320,23 +369,23 @@ export class Character {
 
   public dispose(): void {
     // Clean up geometry and materials
-    this.spheres.forEach(sphere => {
+    this.spheres.forEach((sphere) => {
       if (sphere) {
         this.group.remove(sphere);
         sphere.geometry.dispose();
         if (Array.isArray(sphere.material)) {
-          sphere.material.forEach(mat => mat.dispose());
+          sphere.material.forEach((mat) => mat.dispose());
         } else {
           sphere.material.dispose();
         }
       }
     });
 
-    this.bones.forEach(bone => {
+    this.bones.forEach((bone) => {
       this.group.remove(bone);
       bone.geometry.dispose();
       if (Array.isArray(bone.material)) {
-        bone.material.forEach(mat => mat.dispose());
+        bone.material.forEach((mat) => mat.dispose());
       } else {
         bone.material.dispose();
       }
@@ -351,13 +400,13 @@ export class Character {
       this.wristBalls.right.geometry.dispose();
 
       if (Array.isArray(this.wristBalls.left.material)) {
-        this.wristBalls.left.material.forEach(mat => mat.dispose());
+        this.wristBalls.left.material.forEach((mat) => mat.dispose());
       } else {
         this.wristBalls.left.material.dispose();
       }
 
       if (Array.isArray(this.wristBalls.right.material)) {
-        this.wristBalls.right.material.forEach(mat => mat.dispose());
+        this.wristBalls.right.material.forEach((mat) => mat.dispose());
       } else {
         this.wristBalls.right.material.dispose();
       }

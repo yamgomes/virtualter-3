@@ -16,7 +16,11 @@ export class ShoulderRepetitionCounter {
   }
 
   update(frame: PoseFrame | null): void {
-    if (!frame || (this.lastTimestamp !== null && frame.timestamp - this.lastTimestamp > MAX_POSE_AGE_MS)) {
+    if (
+      !frame ||
+      (this.lastTimestamp !== null &&
+        frame.timestamp - this.lastTimestamp > MAX_POSE_AGE_MS)
+    ) {
       this.armed.left = this.armed.right = false;
     }
     this.lastTimestamp = frame?.timestamp ?? null;

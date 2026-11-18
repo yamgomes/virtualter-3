@@ -13,4 +13,3 @@ O painel sorteia seis caracteres sem `0O6G4A1IL` e reserva o código em uma tran
 O pacote em packages/contracts é instalado pelos dois projetos. Mantenha homephysio-doc e virtualter-3 como pastas irmãs para instalar as dependências do painel.
 
 As regras exigem e-mail verificado para gerenciar cadastros. Isso verifica o endereço da conta. A habilitação profissional ainda precisa de um processo próprio. Revise as regras e o tratamento dos dados antes do uso com pacientes reais.
-

@@ -92,10 +92,10 @@ export class PostureMonitor {
   private invalidSince: number | null = null;
   private requirement: PostureRequirement;
   private delayMs: number;
-  constructor(
-    requirement: PostureRequirement,
-    delayMs = 500
-  ) { this.requirement = requirement; this.delayMs = delayMs; }
+  constructor(requirement: PostureRequirement, delayMs = 500) {
+    this.requirement = requirement;
+    this.delayMs = delayMs;
+  }
   update(frame: PoseFrame | null, now: number): PostureObservation {
     const observation = observePosture(frame, this.requirement);
     if (observation.state !== 'invalid' || !Number.isFinite(now)) {
@@ -106,7 +106,11 @@ export class PostureMonitor {
       this.invalidSince = now;
     return now - this.invalidSince >= this.delayMs
       ? observation
-      : { ...observation, state: 'unknown', message: 'Verificando a posição…' };
+      : {
+          ...observation,
+          state: 'unknown',
+          message: 'Verificando a posição...',
+        };
   }
   reset(): void {
     this.invalidSince = null;

@@ -25,7 +25,10 @@ export interface SurfConfig extends ChallengeConfig {
   targets: number[];
   side: 'left' | 'right';
 }
-export type GoalkeeperConfig = Omit<ChallengeConfig, 'holdMs' | 'sessionDurationMs'> & {
+export type GoalkeeperConfig = Omit<
+  ChallengeConfig,
+  'holdMs' | 'sessionDurationMs'
+> & {
   sessionDurationMs?: never;
 };
 interface PlanIdentity {
@@ -136,7 +139,15 @@ export function isSessionPlan(value: unknown): value is SessionPlan {
   if (!number(c.holdMs) || c.holdMs < 0 || c.holdMs > c.timeLimitMs)
     return false;
   if (value.gameId === 'shoulderElevation')
-    return c.sessionDurationMs === undefined && count(c.sets) && c.sets >= 1 && c.sets <= 100 && number(c.restMs) && c.restMs >= 0 && c.restMs <= 3600000;
+    return (
+      c.sessionDurationMs === undefined &&
+      count(c.sets) &&
+      c.sets >= 1 &&
+      c.sets <= 100 &&
+      number(c.restMs) &&
+      c.restMs >= 0 &&
+      c.restMs <= 3600000
+    );
   if (value.gameId === 'shoulder' && c.targets === undefined) return true;
   if (!Array.isArray(c.targets) || !c.targets.length || c.targets.length > 1000)
     return false;
@@ -182,7 +193,10 @@ export function isSessionResult(value: unknown): value is SessionResult {
     !count(value.hits) ||
     !count(value.misses) ||
     !count(value.points) ||
-    value.plannedAttempts !== (plan.gameId === 'shoulderElevation' ? plan.config.repetitions * plan.config.sets : plan.config.repetitions) ||
+    value.plannedAttempts !==
+      (plan.gameId === 'shoulderElevation'
+        ? plan.config.repetitions * plan.config.sets
+        : plan.config.repetitions) ||
     !Array.isArray(value.attempts) ||
     value.attempts.length >
       (plan.config.sessionDurationMs === undefined
@@ -219,7 +233,9 @@ export function isSessionResult(value: unknown): value is SessionResult {
   )
     return false;
   const c = value.calibration;
-  return plan.gameId === 'shoulder' || plan.gameId === 'shoulderElevation' || plan.gameId === 'goalkeeper'
+  return plan.gameId === 'shoulder' ||
+    plan.gameId === 'shoulderElevation' ||
+    plan.gameId === 'goalkeeper'
     ? number(c.leftRest) &&
         number(c.leftMaximum) &&
         number(c.rightRest) &&

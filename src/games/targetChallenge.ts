@@ -160,7 +160,8 @@ export class TargetChallenge<T> {
     if (!this.finished) {
       this.currentTarget = this.selectTarget(this.completed);
       if (!this.config.targets) {
-        this.requiresExit = success && this.matches(value, this.target, this.tolerance);
+        this.requiresExit =
+          success && this.matches(value, this.target, this.tolerance);
       }
     }
     return this.finished ? [event, { ...event, type: 'completed' }] : [event];

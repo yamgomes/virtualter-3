@@ -13,12 +13,18 @@ export class ShoulderActivity implements GameActivity {
   readonly posture;
   private config: ShoulderConfig;
   private readonly input = new ShoulderInput();
-  get shoulderMeasurementRange() { return this.input.measuredRange; }
+  get shoulderMeasurementRange() {
+    return this.input.measuredRange;
+  }
   private session: ShoulderSession | null = null;
   constructor(config: ShoulderConfig) {
     this.config = config;
     const { posture, defaults } = GAME_DEFINITIONS.shoulder;
-    this.posture = { mode: posture, tolerance: config.posture?.tolerance ?? defaults.postureTolerancePercent / 100 };
+    this.posture = {
+      mode: posture,
+      tolerance:
+        config.posture?.tolerance ?? defaults.postureTolerancePercent / 100,
+    };
     this.planDescription = `${config.repetitions} acertos mínimos · manter por ${config.holdMs / 1000} s · ${config.timeLimitMs / 1000} s por alvo.`;
   }
   calibrate(frame: PoseFrame | null, now: number): PreparationProgress {

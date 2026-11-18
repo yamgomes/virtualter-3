@@ -1,6 +1,7 @@
 import { ShoulderRepetitionCounter } from './exercise/shoulderRepetitions';
 import type { ActivityFactory, GameActivity } from './games/contracts';
 import { PoseOverlay } from './presentation/poseOverlay';
+import { DemoSetup } from './session/demoSetup';
 import { ResultOutbox } from './session/resultOutbox';
 import { SessionClock } from './session/sessionClock';
 import type {
@@ -9,7 +10,6 @@ import type {
   SessionResult,
 } from './session/types';
 import { isSessionPlan } from './session/types';
-import { DemoSetup } from './session/demoSetup';
 import { PoseBuffer } from './tracking/poseBuffer';
 import { PoseFilter } from './tracking/poseFilter';
 import { PostureMonitor } from './tracking/posture';
@@ -116,9 +116,16 @@ export class GameController {
       () => {
         const container = this.el('demo-setup');
         container.hidden = !container.hidden;
-        this.el('try-demo').setAttribute('aria-expanded', String(!container.hidden));
+        this.el('try-demo').setAttribute(
+          'aria-expanded',
+          String(!container.hidden)
+        );
         if (!container.hidden && !container.childElementCount)
-          new DemoSetup(container, this.events.signal, plan => void this.loadPlan('', plan));
+          new DemoSetup(
+            container,
+            this.events.signal,
+            (plan) => void this.loadPlan('', plan)
+          );
       },
       options
     );
@@ -256,10 +263,10 @@ export class GameController {
     if (!['welcome', 'loading'].includes(this.phase)) return;
     const generation = ++this.planGeneration;
     this.phase = 'loading';
-    this.message('Carregando atividade…');
+    this.message('Carregando atividade...');
     this.update();
     try {
-      const plan = demoPlan ?? await this.repository.getPlanByCode(code);
+      const plan = demoPlan ?? (await this.repository.getPlanByCode(code));
       if (this.disposed || generation !== this.planGeneration) return;
       if (!isSessionPlan(plan))
         throw new Error(
@@ -273,8 +280,14 @@ export class GameController {
       this.activity = this.createActivity(this.plan);
       this.el('plan-name').textContent = plan.displayName;
       this.el('plan-title').textContent = plan.title;
-      this.el('plan-intro').textContent = plan.patientId === 'jogador-demo' ? 'Confira a demonstração que você configurou:' : 'Confira a atividade definida pelo seu fisioterapeuta:';
-      this.el('change-code').textContent = plan.patientId === 'jogador-demo' ? 'Escolher outro jogo ou ajustar parâmetros' : 'Usar outro código';
+      this.el('plan-intro').textContent =
+        plan.patientId === 'jogador-demo'
+          ? 'Confira a demonstração que você configurou:'
+          : 'Confira a atividade definida pelo seu fisioterapeuta:';
+      this.el('change-code').textContent =
+        plan.patientId === 'jogador-demo'
+          ? 'Escolher outro jogo ou ajustar parâmetros'
+          : 'Usar outro código';
       this.el('plan-description').textContent = this.activity.planDescription;
       if (plan.metrics?.length) {
         const labels = {
@@ -348,7 +361,7 @@ export class GameController {
     if (!this.plan || !this.activity || this.phase === 'opening') return;
     const generation = ++this.cameraGeneration;
     this.phase = 'opening';
-    this.message('Preparando câmera e detector…');
+    this.message('Preparando câmera e detector...');
     this.update();
     let step: 'access' | 'camera' | 'detector' = 'access';
     let failure =
@@ -815,7 +828,7 @@ export class GameController {
     const plan = this.plan;
     if (!plan || this.disposed) return;
     const generation = this.planGeneration;
-    this.el('save-status').textContent = 'Salvando resultados…';
+    this.el('save-status').textContent = 'Salvando resultados...';
     try {
       await this.outbox.flush(this.repository, plan.patientId);
     } catch {

@@ -1,5 +1,10 @@
 .video-wrap.goalkeeper-stage {
-  background: linear-gradient(#559bcc 0%, #8dc1d9 65%, #518f55 65%, #367949 100%);
+  background: linear-gradient(
+    #559bcc 0%,
+    #8dc1d9 65%,
+    #518f55 65%,
+    #367949 100%
+  );
 }
 
 .goalkeeper-stage video,

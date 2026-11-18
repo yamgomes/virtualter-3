@@ -1,4 +1,7 @@
-import type { BilateralCalibration, ShoulderAngles } from '../../exercise/automaticCalibration';
+import type {
+  BilateralCalibration,
+  ShoulderAngles,
+} from '../../exercise/automaticCalibration';
 import type { Side } from '../../exercise/shoulderMotion';
 import type { AttemptResult, GoalkeeperConfig } from '../../session/types';
 import type { Intensity } from '@homephysio/contracts';
@@ -14,7 +17,11 @@ export class GoalkeeperGame {
   readonly config: GoalkeeperConfig;
   readonly attempts: AttemptResult[] = [];
   private readonly range: BilateralCalibration;
-  private readonly inFlight: { side: Side; degrees: number; launchedAt: number }[] = [];
+  private readonly inFlight: {
+    side: Side;
+    degrees: number;
+    launchedAt: number;
+  }[] = [];
   private readonly launchInterval: number;
   private readonly maxInFlight: number;
   private elapsed = 0;
@@ -22,11 +29,18 @@ export class GoalkeeperGame {
   private launched = 0;
   private lastUpdate: number | null = null;
 
-  constructor(config: GoalkeeperConfig, range: BilateralCalibration, intensity?: Intensity) {
+  constructor(
+    config: GoalkeeperConfig,
+    range: BilateralCalibration,
+    intensity?: Intensity
+  ) {
     this.config = config;
     this.range = range;
     this.maxInFlight = intensity === 'high' ? 2 : 1;
-    this.launchInterval = intensity === 'high' ? 500 : config.timeLimitMs + (intensity === 'moderate' ? 0 : 1000);
+    this.launchInterval =
+      intensity === 'high'
+        ? 500
+        : config.timeLimitMs + (intensity === 'moderate' ? 0 : 1000);
   }
 
   get shots(): Shot[] {
@@ -45,7 +59,10 @@ export class GoalkeeperGame {
     return this.attempts.length >= this.config.repetitions;
   }
 
-  update(angles: ShoulderAngles | null, now: number): AttemptResult['outcome'] | null {
+  update(
+    angles: ShoulderAngles | null,
+    now: number
+  ): AttemptResult['outcome'] | null {
     if (this.completed || !angles) {
       this.lastUpdate = null;
       return null;
@@ -63,14 +80,26 @@ export class GoalkeeperGame {
       const { rest, maximum } = this.range[side];
       const margin = (maximum - rest) * this.config.tolerance;
       outcome = Math.abs(angles[side] - degrees) <= margin ? 'hit' : 'miss';
-      this.attempts.push({ index: this.attempts.length + 1, outcome, activeMs: this.config.timeLimitMs });
+      this.attempts.push({
+        index: this.attempts.length + 1,
+        outcome,
+        activeMs: this.config.timeLimitMs,
+      });
       this.inFlight.shift();
     }
 
-    if (this.launched < this.config.repetitions && this.elapsed >= this.nextLaunchAt && this.inFlight.length < this.maxInFlight) {
+    if (
+      this.launched < this.config.repetitions &&
+      this.elapsed >= this.nextLaunchAt &&
+      this.inFlight.length < this.maxInFlight
+    ) {
       const side = Math.random() < 0.5 ? 'left' : 'right';
       const { rest, maximum } = this.range[side];
-      this.inFlight.push({ side, degrees: rest + (maximum - rest) * Math.random(), launchedAt: this.elapsed });
+      this.inFlight.push({
+        side,
+        degrees: rest + (maximum - rest) * Math.random(),
+        launchedAt: this.elapsed,
+      });
       this.nextLaunchAt = this.elapsed + this.launchInterval;
       this.launched++;
     }

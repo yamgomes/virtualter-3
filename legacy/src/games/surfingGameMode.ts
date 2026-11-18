@@ -1,18 +1,19 @@
-import * as THREE from "three";
-import { BaseGameMode } from "../baseGameMode";
-import type { GameModeConfig } from "../gameMode";
+import * as THREE from 'three';
+import { BaseGameMode } from '../baseGameMode';
+import type { GameModeConfig } from '../gameMode';
 
 /**
  * PLACEHOLDER - Modo de jogo de simulação de surfe
  * O jogador deve simular movimentos de surfe para manter o equilíbrio
  */
 export class SurfingGameMode extends BaseGameMode {
-  readonly name = "surfing";
-  readonly displayName = "Simulador de Surfe";
-  readonly description = "Simule movimentos de surfe para manter o equilíbrio na prancha virtual";
+  readonly name = 'surfing';
+  readonly displayName = 'Simulador de Surfe';
+  readonly description =
+    'Simule movimentos de surfe para manter o equilíbrio na prancha virtual';
 
   protected onInitialize(): void {
-    console.log("SurfingGameMode inicializado - PLACEHOLDER");
+    console.log('SurfingGameMode inicializado - PLACEHOLDER');
     // TODO: Implementar inicialização específica do surfe
   }
 
@@ -23,14 +24,17 @@ export class SurfingGameMode extends BaseGameMode {
       waveDirection: Math.random() > 0.5 ? 'left' : 'right',
       waveIntensity: Math.random() * 3 + 1, // 1-4
       balanceTarget: Math.random() * 60 + 30, // 30-90 graus
-      duration: 3000 // 3 segundos para manter equilíbrio
+      duration: 3000, // 3 segundos para manter equilíbrio
     };
   }
 
-  public checkGoalAchieved(_landmarks: any[], currentGoal: SurfingGoal): boolean {
+  public checkGoalAchieved(
+    _landmarks: any[],
+    currentGoal: SurfingGoal
+  ): boolean {
     // TODO: Implementar verificação de equilíbrio e postura de surfe
     // Verificar: inclinação do corpo, posição dos pés, equilíbrio lateral
-    console.log("Verificando objetivo de surfe - PLACEHOLDER", currentGoal);
+    console.log('Verificando objetivo de surfe - PLACEHOLDER', currentGoal);
     return false; // Placeholder - sempre retorna false
   }
 
@@ -39,7 +43,7 @@ export class SurfingGameMode extends BaseGameMode {
 
     // TODO: Implementar visualização da prancha de surfe e ondas
     // Pode incluir: prancha 3D, ondas animadas, indicadores de direção
-    console.log("Atualizando visualização de surfe - PLACEHOLDER", goal);
+    console.log('Atualizando visualização de surfe - PLACEHOLDER', goal);
 
     // Placeholder: criar uma prancha simples
     const boardGeometry = new THREE.BoxGeometry(2, 0.1, 6);
@@ -57,7 +61,7 @@ export class SurfingGameMode extends BaseGameMode {
       balance: 0,
       kneeFlexion: 0,
       armPosition: 'neutral',
-      isStable: false
+      isStable: false,
     };
   }
 
@@ -68,16 +72,16 @@ export class SurfingGameMode extends BaseGameMode {
       tolerance: 20, // Tolerância para movimentos de equilíbrio
       visualConfig: {
         colors: {
-          primary: 0x00bfff,   // Azul oceano
+          primary: 0x00bfff, // Azul oceano
           secondary: 0xffa500, // Laranja prancha
-          success: 0x32cd32,   // Verde sucesso
-          error: 0xff6347      // Vermelho erro
+          success: 0x32cd32, // Verde sucesso
+          error: 0xff6347, // Vermelho erro
         },
         sizes: {
           goalSize: 0.3,
-          indicatorSize: 0.15
-        }
-      }
+          indicatorSize: 0.15,
+        },
+      },
     };
   }
 }

@@ -103,4 +103,3 @@ Os antigos `GameMode`, `BaseGameMode`, gerenciadores de `core/` e placeholders f
 # Importação local de atividade
 
 Na tela inicial, é possível importar o JSON exportado pelo painel profissional de demonstração. O cliente valida o conteúdo antes de preparar a sessão. O arquivo e o histórico são locais, sem autenticação ou sincronização com o painel; não use dados reais de pacientes. A importação aceita arquivos de até 1 MB.
-

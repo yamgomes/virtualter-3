@@ -1,6 +1,9 @@
 import type { PoseFrame } from '../tracking/types';
 import { AutomaticCalibration } from './automaticCalibration';
-import type { BilateralCalibration, ShoulderAngles } from './automaticCalibration';
+import type {
+  BilateralCalibration,
+  ShoulderAngles,
+} from './automaticCalibration';
 import { shoulderAngle } from './shoulderMotion';
 
 /** Níveis usados pelos alvos fixos de planos antigos. */

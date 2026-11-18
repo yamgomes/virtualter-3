@@ -1,8 +1,8 @@
-import * as THREE from "three";
-import { Sky } from "three/examples/jsm/objects/Sky.js";
-import { Character } from "../character";
-import { GoalManager } from "../goalManager";
-import { GAME_CONFIG } from "../constants";
+import * as THREE from 'three';
+import { Sky } from 'three/examples/jsm/objects/Sky.js';
+import { Character } from '../character';
+import { GoalManager } from '../goalManager';
+import { GAME_CONFIG } from '../constants';
 
 export class SceneManager {
   public scene: THREE.Scene;
@@ -32,11 +32,14 @@ export class SceneManager {
   }
 
   private setupRenderer(): void {
-    this.renderer.setSize(window.innerWidth, window.innerHeight - GAME_CONFIG.HEADER_HEIGHT);
-    this.renderer.domElement.style.position = "absolute";
+    this.renderer.setSize(
+      window.innerWidth,
+      window.innerHeight - GAME_CONFIG.HEADER_HEIGHT
+    );
+    this.renderer.domElement.style.position = 'absolute';
     this.renderer.domElement.style.top = `${GAME_CONFIG.HEADER_HEIGHT}px`;
-    this.renderer.domElement.style.left = "0";
-    this.renderer.domElement.style.zIndex = "1";
+    this.renderer.domElement.style.left = '0';
+    this.renderer.domElement.style.zIndex = '1';
     document.body.appendChild(this.renderer.domElement);
     this.camera.position.z = 10;
   }
@@ -66,13 +69,17 @@ export class SceneManager {
   }
 
   private setupEventListeners(): void {
-    window.addEventListener("resize", () => this.handleResize());
+    window.addEventListener('resize', () => this.handleResize());
   }
 
   private handleResize(): void {
-    this.camera.aspect = window.innerWidth / (window.innerHeight - GAME_CONFIG.HEADER_HEIGHT);
+    this.camera.aspect =
+      window.innerWidth / (window.innerHeight - GAME_CONFIG.HEADER_HEIGHT);
     this.camera.updateProjectionMatrix();
-    this.renderer.setSize(window.innerWidth, window.innerHeight - GAME_CONFIG.HEADER_HEIGHT);
+    this.renderer.setSize(
+      window.innerWidth,
+      window.innerHeight - GAME_CONFIG.HEADER_HEIGHT
+    );
     this.renderer.domElement.style.top = `${GAME_CONFIG.HEADER_HEIGHT}px`;
 
     if (this.backgroundMesh) {
@@ -86,8 +93,11 @@ export class SceneManager {
     videoTexture.magFilter = THREE.LinearFilter;
     videoTexture.format = THREE.RGBFormat;
 
-    video.addEventListener("loadedmetadata", () => {
-      const geometry = new THREE.PlaneGeometry(16, 16 / (video.videoWidth / video.videoHeight));
+    video.addEventListener('loadedmetadata', () => {
+      const geometry = new THREE.PlaneGeometry(
+        16,
+        16 / (video.videoWidth / video.videoHeight)
+      );
       const material = new THREE.MeshBasicMaterial({ map: videoTexture });
       this.backgroundMesh = new THREE.Mesh(geometry, material);
       this.backgroundMesh.position.z = -5;
@@ -102,11 +112,13 @@ export class SceneManager {
   private updateBackgroundScale(): void {
     if (!this.backgroundMesh) return;
 
-    const video = (this.backgroundMesh.material as THREE.MeshBasicMaterial).map?.image;
+    const video = (this.backgroundMesh.material as THREE.MeshBasicMaterial).map
+      ?.image;
     if (!video || !video.videoWidth) return;
 
     const videoAspect = video.videoWidth / video.videoHeight;
-    const windowAspect = window.innerWidth / (window.innerHeight - GAME_CONFIG.HEADER_HEIGHT);
+    const windowAspect =
+      window.innerWidth / (window.innerHeight - GAME_CONFIG.HEADER_HEIGHT);
 
     if (videoAspect > windowAspect) {
       this.backgroundMesh.scale.set(-windowAspect / videoAspect, 1, 1);
@@ -119,7 +131,9 @@ export class SceneManager {
     this.character.updatePose(landmarks);
   }
 
-  showCharacter(position?: THREE.Vector3 | { x: number; y: number; z: number }): void {
+  showCharacter(
+    position?: THREE.Vector3 | { x: number; y: number; z: number }
+  ): void {
     this.character.show(position);
   }
 
@@ -156,7 +170,10 @@ export class SceneManager {
     this.goalManager.completeGoal();
   }
 
-  setGoalCallbacks(onGoalReached?: (goal: any) => void, onGoalCompleted?: () => void): void {
+  setGoalCallbacks(
+    onGoalReached?: (goal: any) => void,
+    onGoalCompleted?: () => void
+  ): void {
     this.goalManager.setCallbacks(onGoalReached, onGoalCompleted);
   }
 

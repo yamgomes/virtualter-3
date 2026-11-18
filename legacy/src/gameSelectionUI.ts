@@ -1,4 +1,4 @@
-import { GameModeManager } from "./core/gameModeManager";
+import { GameModeManager } from './core/gameModeManager';
 
 /**
  * Gerencia a interface de seleção de jogos
@@ -53,7 +53,9 @@ export class GameSelectionUI {
 
     // Atualiza o título do header com o jogo selecionado
     if (this.selectedGameMode && this.gameTitle) {
-      const metadata = this.gameModeManager.getModeMetadata(this.selectedGameMode);
+      const metadata = this.gameModeManager.getModeMetadata(
+        this.selectedGameMode
+      );
       if (metadata) {
         this.gameTitle.textContent = metadata.displayName;
       }
@@ -72,13 +74,13 @@ export class GameSelectionUI {
     const requiredElements = [
       { id: 'game-selection', name: 'selectionScreen' },
       { id: 'games-container', name: 'gamesContainer' },
-      { id: 'start-game-btn', name: 'startButton' }
+      { id: 'start-game-btn', name: 'startButton' },
     ];
 
     // Elementos que podem estar ocultos inicialmente
     const optionalElements = [
       { id: 'game-header', name: 'gameHeader' },
-      { id: 'game-title', name: 'gameTitle' }
+      { id: 'game-title', name: 'gameTitle' },
     ];
 
     const missingElements: string[] = [];
@@ -104,9 +106,14 @@ export class GameSelectionUI {
     });
 
     if (missingElements.length > 0) {
-      console.error('Elementos HTML obrigatórios não encontrados:', missingElements);
+      console.error(
+        'Elementos HTML obrigatórios não encontrados:',
+        missingElements
+      );
       console.error('DOM atual:', document.documentElement.outerHTML);
-      throw new Error(`Elementos HTML necessários não encontrados: ${missingElements.join(', ')}`);
+      throw new Error(
+        `Elementos HTML necessários não encontrados: ${missingElements.join(', ')}`
+      );
     }
 
     console.log('Elementos HTML principais foram encontrados com sucesso');
@@ -144,7 +151,7 @@ export class GameSelectionUI {
     const games = this.gameModeManager.getModesForUI();
     this.gamesContainer.innerHTML = '';
 
-    games.forEach(game => {
+    games.forEach((game) => {
       const gameCard = this.createGameCard(game);
       this.gamesContainer.appendChild(gameCard);
     });
@@ -196,13 +203,17 @@ export class GameSelectionUI {
 
   private selectGame(gameName: string): void {
     // Remove seleção anterior
-    const previousSelected = this.gamesContainer.querySelector('.game-card.selected');
+    const previousSelected = this.gamesContainer.querySelector(
+      '.game-card.selected'
+    );
     if (previousSelected) {
       previousSelected.classList.remove('selected');
     }
 
     // Adiciona seleção ao novo card
-    const selectedCard = this.gamesContainer.querySelector(`[data-game-mode="${gameName}"]`);
+    const selectedCard = this.gamesContainer.querySelector(
+      `[data-game-mode="${gameName}"]`
+    );
     if (selectedCard) {
       selectedCard.classList.add('selected');
     }
@@ -215,18 +226,18 @@ export class GameSelectionUI {
 
   private formatCategory(category: string): string {
     const categories = {
-      'fitness': 'Fitness',
-      'rehabilitation': 'Reabilitação',
-      'entertainment': 'Entretenimento'
+      fitness: 'Fitness',
+      rehabilitation: 'Reabilitação',
+      entertainment: 'Entretenimento',
     };
     return categories[category as keyof typeof categories] || category;
   }
 
   private formatDifficulty(difficulty: string): string {
     const difficulties = {
-      'easy': 'Fácil',
-      'medium': 'Médio',
-      'hard': 'Difícil'
+      easy: 'Fácil',
+      medium: 'Médio',
+      hard: 'Difícil',
     };
     return difficulties[difficulty as keyof typeof difficulties] || difficulty;
   }
