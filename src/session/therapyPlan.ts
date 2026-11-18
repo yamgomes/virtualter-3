@@ -34,6 +34,11 @@ export function therapyPlan(patientId: string, revision: number, therapy: Therap
     sessionDurationMs: therapy.durationSeconds * 1000,
   };
   if (therapy.gameId === 'shoulder') return { ...identity, gameId: 'shoulder', config: timedConfig };
+  if (therapy.gameId === 'shoulderElevation') return {
+    ...identity,
+    gameId: 'shoulderElevation',
+    config: { ...config, timeLimitMs: Math.max(1, therapy.holdSeconds) * 1000, holdMs: therapy.holdSeconds * 1000, sets: therapy.sets, restMs: therapy.restSeconds * 1000 },
+  };
   return {
     ...identity,
     gameId: 'surfing',

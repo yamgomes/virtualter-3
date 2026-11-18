@@ -47,11 +47,12 @@
             </form>
             <p class="demo-note">
               Sem código de sessão?
-              <button id="try-demo" class="text-button" type="button">
+              <button id="try-demo" class="text-button" type="button" aria-expanded="false" aria-controls="demo-setup">
                 Explore uma demonstração livre
               </button>
               Jogue sem vínculo com fisioterapeuta.
             </p>
+            <div id="demo-setup" hidden></div>
             <p class="fine">
               O vídeo é processado neste dispositivo. O detector precisa de
               conexão para carregar seus arquivos.
@@ -59,9 +60,8 @@
           </div>
           <div data-phase="plan" hidden>
             <h1>Olá, <span id="plan-name"></span>.</h1>
-            <p>Confira a atividade definida pelo seu fisioterapeuta:</p>
+            <p id="plan-intro">Confira a atividade definida pelo seu fisioterapeuta:</p>
             <div class="plan-card">
-              <span class="plan-label">ATIVIDADE</span>
               <h2 id="plan-title"></h2>
               <p id="plan-description"></p>
             </div>

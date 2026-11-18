@@ -30,7 +30,7 @@ export class FirebaseSessionRepository implements SessionRepository {
     }
   }
   async validateAccess(plan: SessionPlan): Promise<boolean> {
-    if (plan.gameId === 'goalkeeper' && plan.id === 'goleiro-demo' && plan.patientId === 'jogador-demo')
+    if (plan.patientId === 'jogador-demo' && (plan.id === 'demonstracao-local' || plan.id === 'goleiro-demo'))
       return true;
     const loaded = this.loaded;
     if (!loaded || loaded.patientId !== plan.patientId || loaded.revision !== plan.version) return false;
@@ -40,7 +40,7 @@ export class FirebaseSessionRepository implements SessionRepository {
   listResults(patientId: string): Promise<SessionResult[]> { return this.local.listResults(patientId); }
 
   publishesResults(plan: SessionPlan): boolean {
-    return plan.patientId !== 'jogador-demo' && (plan.gameId === 'shoulder' || plan.gameId === 'goalkeeper');
+    return plan.patientId !== 'jogador-demo' && (plan.gameId === 'shoulder' || plan.gameId === 'shoulderElevation' || plan.gameId === 'goalkeeper');
   }
 
   async saveResult(result: SessionResult): Promise<void> {

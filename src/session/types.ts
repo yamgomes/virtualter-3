@@ -17,6 +17,10 @@ export interface ShoulderConfig extends ChallengeConfig {
   /** Planos antigos podem registrar uma sequência fixa. */
   targets?: ShoulderLevels[];
 }
+export interface ShoulderElevationConfig extends ChallengeConfig {
+  sets: number;
+  restMs: number;
+}
 export interface SurfConfig extends ChallengeConfig {
   targets: number[];
   side: 'left' | 'right';
@@ -38,6 +42,7 @@ export type SessionPlan = PlanIdentity &
     | { gameId: 'shoulder'; config: ShoulderConfig }
     | { gameId: 'surfing'; config: SurfConfig }
     | { gameId: 'goalkeeper'; config: GoalkeeperConfig }
+    | { gameId: 'shoulderElevation'; config: ShoulderElevationConfig }
   );
 export interface AttemptResult {
   index: number;
@@ -130,6 +135,8 @@ export function isSessionPlan(value: unknown): value is SessionPlan {
   if (value.gameId === 'goalkeeper') return c.sessionDurationMs === undefined;
   if (!number(c.holdMs) || c.holdMs < 0 || c.holdMs > c.timeLimitMs)
     return false;
+  if (value.gameId === 'shoulderElevation')
+    return c.sessionDurationMs === undefined && count(c.sets) && c.sets >= 1 && c.sets <= 100 && number(c.restMs) && c.restMs >= 0 && c.restMs <= 3600000;
   if (value.gameId === 'shoulder' && c.targets === undefined) return true;
   if (!Array.isArray(c.targets) || !c.targets.length || c.targets.length > 1000)
     return false;
@@ -175,11 +182,11 @@ export function isSessionResult(value: unknown): value is SessionResult {
     !count(value.hits) ||
     !count(value.misses) ||
     !count(value.points) ||
-    value.plannedAttempts !== plan.config.repetitions ||
+    value.plannedAttempts !== (plan.gameId === 'shoulderElevation' ? plan.config.repetitions * plan.config.sets : plan.config.repetitions) ||
     !Array.isArray(value.attempts) ||
     value.attempts.length >
       (plan.config.sessionDurationMs === undefined
-        ? plan.config.repetitions
+        ? value.plannedAttempts
         : 10000)
   )
     return false;
@@ -203,7 +210,7 @@ export function isSessionResult(value: unknown): value is SessionResult {
   if (
     value.endReason === 'completed' &&
     plan.config.sessionDurationMs === undefined &&
-    value.attempts.length !== plan.config.repetitions
+    value.attempts.length !== value.plannedAttempts
   )
     return false;
   if (
@@ -212,7 +219,7 @@ export function isSessionResult(value: unknown): value is SessionResult {
   )
     return false;
   const c = value.calibration;
-  return plan.gameId === 'shoulder' || plan.gameId === 'goalkeeper'
+  return plan.gameId === 'shoulder' || plan.gameId === 'shoulderElevation' || plan.gameId === 'goalkeeper'
     ? number(c.leftRest) &&
         number(c.leftMaximum) &&
         number(c.rightRest) &&

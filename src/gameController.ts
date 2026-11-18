@@ -9,6 +9,7 @@ import type {
   SessionResult,
 } from './session/types';
 import { isSessionPlan } from './session/types';
+import { DemoSetup } from './session/demoSetup';
 import { PoseBuffer } from './tracking/poseBuffer';
 import { PoseFilter } from './tracking/poseFilter';
 import { PostureMonitor } from './tracking/posture';
@@ -88,6 +89,11 @@ export class GameController {
     this.bind();
     this.update();
     this.raf = requestAnimationFrame((now) => this.render(now));
+    const sharedCode = new URL(window.location.href).searchParams.get('code');
+    if (sharedCode) {
+      this.el<HTMLInputElement>('session-code').value = sharedCode;
+      void this.loadPlan(sharedCode);
+    }
   }
   private el<T extends HTMLElement>(id: string): T {
     const element = document.getElementById(id);
@@ -107,7 +113,13 @@ export class GameController {
     );
     this.el('try-demo').addEventListener(
       'click',
-      () => void this.loadPlan('GOOL'),
+      () => {
+        const container = this.el('demo-setup');
+        container.hidden = !container.hidden;
+        this.el('try-demo').setAttribute('aria-expanded', String(!container.hidden));
+        if (!container.hidden && !container.childElementCount)
+          new DemoSetup(container, this.events.signal, plan => void this.loadPlan('', plan));
+      },
       options
     );
     this.el('change-code').addEventListener(
@@ -240,14 +252,14 @@ export class GameController {
     );
     window.addEventListener('beforeunload', () => this.dispose(), options);
   }
-  private async loadPlan(code: string): Promise<void> {
+  private async loadPlan(code: string, demoPlan?: SessionPlan): Promise<void> {
     if (!['welcome', 'loading'].includes(this.phase)) return;
     const generation = ++this.planGeneration;
     this.phase = 'loading';
     this.message('Carregando atividade…');
     this.update();
     try {
-      const plan = await this.repository.getPlanByCode(code);
+      const plan = demoPlan ?? await this.repository.getPlanByCode(code);
       if (this.disposed || generation !== this.planGeneration) return;
       if (!isSessionPlan(plan))
         throw new Error(
@@ -261,6 +273,8 @@ export class GameController {
       this.activity = this.createActivity(this.plan);
       this.el('plan-name').textContent = plan.displayName;
       this.el('plan-title').textContent = plan.title;
+      this.el('plan-intro').textContent = plan.patientId === 'jogador-demo' ? 'Confira a demonstração que você configurou:' : 'Confira a atividade definida pelo seu fisioterapeuta:';
+      this.el('change-code').textContent = plan.patientId === 'jogador-demo' ? 'Escolher outro jogo ou ajustar parâmetros' : 'Usar outro código';
       this.el('plan-description').textContent = this.activity.planDescription;
       if (plan.metrics?.length) {
         const labels = {
@@ -766,11 +780,14 @@ export class GameController {
           ? 'A sessão encontrou um erro.'
           : 'Sessão encerrada por você.';
     const goalkeeper = result.plan.gameId === 'goalkeeper';
+    const shoulderElevation = result.plan.gameId === 'shoulderElevation';
     const summaries = {
       hits: goalkeeper
         ? `${result.hits} defesas em ${result.attempts.length} chutes`
-        : `${result.hits} acertos (meta mínima: ${result.plannedAttempts})`,
-      misses: `${result.misses} ${goalkeeper ? 'gols sofridos' : 'alvos não alcançados'}`,
+        : shoulderElevation
+          ? `${result.hits} de ${result.plannedAttempts} repetições concluídas`
+          : `${result.hits} acertos (meta mínima: ${result.plannedAttempts})`,
+      misses: `${result.misses} ${goalkeeper ? 'gols sofridos' : shoulderElevation ? 'repetições não concluídas' : 'alvos não alcançados'}`,
       points: `${result.points} pontos`,
       activeMs: `Tempo ativo: ${Math.round(result.activeMs / 1000)} s`,
       pausedMs: `Pausas: ${Math.round(result.pausedMs / 1000)} s`,

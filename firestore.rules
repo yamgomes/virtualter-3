@@ -18,14 +18,16 @@ service cloud.firestore {
     function label(value) { return value is string && value.size() > 0 && value.size() <= 120; }
     function therapy(t) {
       let n = '(100|[0-9]{1,2}([.][0-9]{1,2})?)';
-      return t is map && t.keys().hasOnly(['gameId','title','intensity','metrics','targets','durationSeconds','repetitions','holdSeconds','targetSeconds','tolerancePercent','postureTolerancePercent','pointsPerHit','side'])
-        && label(t.title) && t.gameId in ['shoulder','surfing','goalkeeper'] && t.side in ['left','right']
+      return t is map && t.keys().hasOnly(['gameId','title','intensity','metrics','targets','durationSeconds','repetitions','holdSeconds','targetSeconds','tolerancePercent','postureTolerancePercent','pointsPerHit','side','sets','restSeconds'])
+        && label(t.title) && t.gameId in ['shoulder','surfing','goalkeeper','shoulderElevation'] && t.side in ['left','right']
         && t.intensity in ['low','moderate','high','custom'] && t.metrics is list && t.metrics.size() >= 1 && t.metrics.size() <= 5
         && t.metrics.hasOnly(['hits','misses','points','activeMs','pausedMs']) && t.metrics.toSet().size() == t.metrics.size()
         && t.targets is string && t.targets.size() <= 500
-        && (t.gameId == 'goalkeeper' ? t.targets == '' : (t.gameId == 'shoulder' ? t.targets.matches('^'+n+'/'+n+'(,'+n+'/'+n+')*$') : t.targets.matches('^'+n+'(,'+n+')*$')))
+        && (t.gameId in ['goalkeeper','shoulderElevation'] ? t.targets == '' : (t.gameId == 'shoulder' ? t.targets.matches('^'+n+'/'+n+'(,'+n+'/'+n+')*$') : t.targets.matches('^'+n+'(,'+n+')*$')))
         && bounded(t.durationSeconds,1,3600) && t.repetitions is int && bounded(t.repetitions,1,1000)
-        && bounded(t.targetSeconds,0.1,3600) && bounded(t.holdSeconds,0,t.targetSeconds)
+        && bounded(t.targetSeconds,0.1,3600) && bounded(t.holdSeconds,0,t.gameId == 'shoulderElevation' ? 3600 : t.targetSeconds)
+        && t.get('sets',1) is int && bounded(t.get('sets',1),1,100) && bounded(t.get('restSeconds',0),0,3600)
+        && (t.gameId != 'shoulderElevation' || t.keys().hasAll(['sets','restSeconds']))
         && bounded(t.tolerancePercent,1,50) && bounded(t.postureTolerancePercent,0,100)
         && t.pointsPerHit is int && bounded(t.pointsPerHit,0,1000);
     }
@@ -40,12 +42,12 @@ service cloud.firestore {
     function resultCount(value, max) { return value is int && bounded(value, 0, max); }
     function validSessionReport(d) {
       return d.keys().hasOnly(['schemaVersion','gameId','title','revision','completedAtMs','activeMs','pausedMs','endReason','hits','misses','points','movement','accessCode'])
-        && d.schemaVersion == 1 && d.gameId in ['shoulder','goalkeeper'] && label(d.title)
+        && d.schemaVersion == 1 && d.gameId in ['shoulder','goalkeeper','shoulderElevation'] && label(d.title)
         && d.revision is int && d.revision >= 1 && d.accessCode is string && issuedCode(d.accessCode)
         && d.completedAtMs is int && bounded(d.completedAtMs, 1, request.time.toMillis() + 300000)
         && resultCount(d.activeMs, 604800000) && resultCount(d.pausedMs, 604800000)
         && d.endReason in ['completed','stopped','error']
-        && resultCount(d.hits, 10000) && resultCount(d.misses, 10000) && resultCount(d.points, 10000000)
+        && resultCount(d.hits, d.gameId == 'shoulderElevation' ? 100000 : 10000) && resultCount(d.misses, 10000) && resultCount(d.points, d.gameId == 'shoulderElevation' ? 100000000 : 10000000)
         && d.movement is map && d.movement.keys().hasOnly(['shoulderRepetitions'])
         && d.movement.shoulderRepetitions is map && d.movement.shoulderRepetitions.keys().hasOnly(['left','right'])
         && resultCount(d.movement.shoulderRepetitions.left, 100000) && resultCount(d.movement.shoulderRepetitions.right, 100000);
@@ -59,7 +61,10 @@ service cloud.firestore {
         && (d.gameId == 'goalkeeper'
           ? d.hits + d.misses <= access.therapy.repetitions
             && (d.endReason != 'completed' || d.hits + d.misses == access.therapy.repetitions)
-          : d.hits + d.misses <= 10000);
+          : d.gameId == 'shoulderElevation'
+            ? d.misses == 0 && d.hits <= access.therapy.repetitions * access.therapy.sets
+              && (d.endReason != 'completed' || d.hits == access.therapy.repetitions * access.therapy.sets)
+            : d.hits + d.misses <= 10000);
     }
     match /professionals/{professional}/patients/{id} {
       allow get: if owner(professional);

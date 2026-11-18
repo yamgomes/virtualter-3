@@ -42,6 +42,8 @@ export const NUMERIC_LIMITS: Record<NumericKey, readonly [number, number]> = {
   tolerancePercent: [1, 50],
   postureTolerancePercent: [0, 100],
   pointsPerHit: [0, 1000],
+  sets: [1, 100],
+  restSeconds: [0, 3600],
 };
 
 function numberField(key: NumericKey, label: string, decimals = 0, customizesIntensity = true): TherapyField {
@@ -72,13 +74,13 @@ const timedFields = [
 ];
 
 const commonDefaults: Settings = {
-  intensity: 'custom', targets: '', durationSeconds: 60, repetitions: 6, holdSeconds: 0.7,
-  targetSeconds: 6, tolerancePercent: 12, postureTolerancePercent: 20, pointsPerHit: 10, side: 'left',
+  intensity: 'custom', targets: '', durationSeconds: 600, repetitions: 6, holdSeconds: 0.7,
+  targetSeconds: 6, tolerancePercent: 12, postureTolerancePercent: 20, pointsPerHit: 10, side: 'left', sets: 1, restSeconds: 30,
 };
 const timedPresets = {
-  low: { durationSeconds: 30, repetitions: 4, holdSeconds: 0.5, targetSeconds: 8, tolerancePercent: 18 },
-  moderate: { durationSeconds: 60, repetitions: 6, holdSeconds: 0.7, targetSeconds: 6, tolerancePercent: 12 },
-  high: { durationSeconds: 90, repetitions: 10, holdSeconds: 1, targetSeconds: 4, tolerancePercent: 8 },
+  low: { durationSeconds: 600, repetitions: 4, holdSeconds: 0.5, targetSeconds: 8, tolerancePercent: 18 },
+  moderate: { durationSeconds: 600, repetitions: 6, holdSeconds: 0.7, targetSeconds: 6, tolerancePercent: 12 },
+  high: { durationSeconds: 600, repetitions: 10, holdSeconds: 1, targetSeconds: 4, tolerancePercent: 8 },
 };
 const level = '(100|[0-9]{1,2}(\\.[0-9]{1,2})?)';
 const calibratedTargetHelp = 'O jogo sorteia os alvos dentro do alcance calibrado para cada braço.';
@@ -126,6 +128,14 @@ export const GAME_DEFINITIONS: Record<GameId, GameDefinition> = {
       ...scoreFields,
     ],
     defaults: { ...commonDefaults, intensity: 'low', repetitions: 8, holdSeconds: 0, targetSeconds: DEFAULT_GOALKEEPER_FLIGHT_MS / 1000, tolerancePercent: 18 },
+    customIntensity: false,
+    storedTargetsPattern: '^$',
+  },
+  shoulderElevation: {
+    label: 'Elevação de ombros convencional', posture: 'front', postureLabel: 'De frente',
+    help: 'Enquadre os dois ombros, cotovelos e quadris. Eleve os dois braços ao mesmo tempo, até a altura confortável definida na calibração.',
+    fields: [numberField('repetitions', 'Repetições por série'), numberField('holdSeconds', 'Tempo mínimo no alto (s)', 1), numberField('sets', 'Número de séries'), numberField('restSeconds', 'Descanso entre séries (s)', 0, false)],
+    defaults: { ...commonDefaults, targets: '', repetitions: 8, holdSeconds: 1, targetSeconds: 6, sets: 3, restSeconds: 30 },
     customIntensity: false,
     storedTargetsPattern: '^$',
   },

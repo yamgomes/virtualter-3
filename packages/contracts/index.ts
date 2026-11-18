@@ -4,14 +4,14 @@ export type { TherapyField } from './game-definitions';
 export { validMovementMetrics } from './session-report';
 export type { MovementMetrics, ShoulderRepetitions, SessionReport } from './session-report';
 
-export type GameId = 'shoulder' | 'surfing' | 'goalkeeper';
+export type GameId = 'shoulder' | 'surfing' | 'goalkeeper' | 'shoulderElevation';
 export type Metric = 'hits' | 'misses' | 'points' | 'activeMs' | 'pausedMs';
 export type Intensity = 'low' | 'moderate' | 'high' | 'custom';
 export interface Therapy {
   gameId: GameId; title: string; intensity: Intensity; metrics: Metric[];
   targets: string; durationSeconds: number; repetitions: number; holdSeconds: number;
   targetSeconds: number; tolerancePercent: number; postureTolerancePercent: number;
-  pointsPerHit: number; side: 'left' | 'right';
+  pointsPerHit: number; side: 'left' | 'right'; sets: number; restSeconds: number;
 }
 export interface Patient {
   id: string; name: string; code: string; therapy: Therapy | null; revision: number;
@@ -35,13 +35,13 @@ export function validTherapy(t: unknown): t is Therapy {
   const definition = GAME_DEFINITIONS[v.gameId];
   const numbersValid = (Object.keys(NUMERIC_LIMITS) as (keyof typeof NUMERIC_LIMITS)[]).every(key => {
     const [min, max] = NUMERIC_LIMITS[key];
-    const value = v[key];
+    const value = v[key] ?? (key === 'sets' ? 1 : key === 'restSeconds' ? 0 : undefined);
     return Number.isFinite(value) && value >= min && value <= max;
   });
   return typeof v.title === 'string' && v.title.trim().length > 0 && v.title.length <= 120 &&
     ['low','moderate','high','custom'].includes(v.intensity) && Array.isArray(v.metrics) && v.metrics.length > 0 && v.metrics.length <= 5 && new Set(v.metrics).size === v.metrics.length && v.metrics.every(m => METRICS.some(x => x.value === m)) &&
     typeof v.targets === 'string' && v.targets.length <= 500 && new RegExp(definition.storedTargetsPattern).test(v.targets) &&
-    numbersValid && v.holdSeconds <= v.targetSeconds && Number.isInteger(v.repetitions) && Number.isInteger(v.pointsPerHit) && ['left','right'].includes(v.side);
+    numbersValid && (v.gameId !== 'shoulderElevation' || (Number.isInteger(v.sets) && v.sets >= 1 && v.restSeconds >= 0)) && (v.gameId === 'shoulderElevation' || v.holdSeconds <= v.targetSeconds) && Number.isInteger(v.repetitions) && Number.isInteger(v.pointsPerHit) && ['left','right'].includes(v.side);
 }
 export function normalizeCode(code: string): string { return code.replace(/[\s-]/g, '').toUpperCase(); }
 const CODE_ALPHABET = '235789BCDEFHJKMNPQRSTUVWXYZ';

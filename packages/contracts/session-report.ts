@@ -9,7 +9,7 @@ export interface MovementMetrics {
 
 export interface SessionReport {
   schemaVersion: 1;
-  gameId: 'shoulder' | 'goalkeeper';
+  gameId: 'shoulder' | 'shoulderElevation' | 'goalkeeper';
   title: string;
   revision: number;
   completedAtMs: number;

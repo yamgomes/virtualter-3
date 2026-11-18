@@ -313,7 +313,6 @@ progress {
   padding: 22px;
   margin: 25px 0;
 }
-.plan-label,
 .plan-details small {
   font-size: 10px;
   letter-spacing: 1.3px;
@@ -637,3 +636,27 @@ body.camera-active {
     --stage-height: calc(100svh - 16px);
   }
 }
+.demo-setup {
+  margin-top: 20px;
+  padding: 20px;
+  border: 1px solid #d6e1df;
+  border-radius: 16px;
+}
+.demo-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+  gap: 16px;
+  margin: 20px 0;
+}
+.demo-setup select, .demo-setup input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px;
+  border: 1px solid #b8cac5;
+  border-radius: 10px;
+  background: white;
+  color: #173f36;
+  font: inherit;
+}
+.demo-setup label, .demo-setup small { display: block; margin-bottom: 6px; }
+.demo-setup [role="alert"] { color: #a53232; }
