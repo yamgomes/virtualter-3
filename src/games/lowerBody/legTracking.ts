@@ -1,4 +1,4 @@
-import type { PoseFrame } from '../../tracking/types';
+import type { Landmark, PoseFrame } from '../../tracking/types';
 
 export const LEGS = ['left', 'right'] as const;
 export type Leg = (typeof LEGS)[number];
@@ -20,9 +20,28 @@ export interface LegCalibration extends StandingPose {
   rightMaximum: number;
 }
 
-export function readLegPose(frame: PoseFrame | null): StandingPose | null {
+export type LegPoseIssue =
+  'frame' | 'torso' | 'leftKnee' | 'rightKnee' | 'knees' | 'distance';
+
+type LegPoseObservation =
+  | { sample: StandingPose; issue?: never }
+  | { sample: null; issue: LegPoseIssue };
+
+function inFrame(point: Landmark | undefined): point is Landmark {
+  return (
+    !!point &&
+    [point.x, point.y, point.visibility].every(Number.isFinite) &&
+    point.x >= 0 &&
+    point.x <= 1 &&
+    point.y >= 0 &&
+    point.y <= 1 &&
+    point.visibility >= 0.5
+  );
+}
+
+export function observeLegPose(frame: PoseFrame | null): LegPoseObservation {
   if (!frame || !Number.isFinite(frame.aspectRatio) || frame.aspectRatio <= 0)
-    return null;
+    return { sample: null, issue: 'frame' };
   const {
     leftShoulder,
     rightShoulder,
@@ -30,42 +49,21 @@ export function readLegPose(frame: PoseFrame | null): StandingPose | null {
     rightHip,
     leftKnee,
     rightKnee,
-    leftAnkle,
-    rightAnkle,
   } = frame.points;
   if (
-    !leftShoulder ||
-    !rightShoulder ||
-    !leftHip ||
-    !rightHip ||
-    !leftKnee ||
-    !rightKnee ||
-    !leftAnkle ||
-    !rightAnkle
+    !inFrame(leftShoulder) ||
+    !inFrame(rightShoulder) ||
+    !inFrame(leftHip) ||
+    !inFrame(rightHip)
   )
-    return null;
-  const landmarks = [
-    leftShoulder,
-    rightShoulder,
-    leftHip,
-    rightHip,
-    leftKnee,
-    rightKnee,
-    leftAnkle,
-    rightAnkle,
-  ];
-  if (
-    landmarks.some(
-      ({ x, y, visibility }) =>
-        ![x, y, visibility].every(Number.isFinite) ||
-        x < 0 ||
-        x > 1 ||
-        y < 0 ||
-        y > 1 ||
-        visibility < 0.5
-    )
-  )
-    return null;
+    return { sample: null, issue: 'torso' };
+  const leftVisible = inFrame(leftKnee);
+  const rightVisible = inFrame(rightKnee);
+  if (!leftVisible || !rightVisible)
+    return {
+      sample: null,
+      issue: leftVisible ? 'rightKnee' : rightVisible ? 'leftKnee' : 'knees',
+    };
 
   const lean =
     ((leftShoulder.x + rightShoulder.x - leftHip.x - rightHip.x) *
@@ -75,11 +73,13 @@ export function readLegPose(frame: PoseFrame | null): StandingPose | null {
     lean,
     (leftHip.y + rightHip.y - leftShoulder.y - rightShoulder.y) / 2
   );
-  if (torso < 0.04) return null;
+  if (torso < 0.04) return { sample: null, issue: 'distance' };
   return {
-    leftRest: (leftKnee.y - leftHip.y) / torso,
-    rightRest: (rightKnee.y - rightHip.y) / torso,
-    torsoLean: lean / torso,
+    sample: {
+      leftRest: (leftKnee.y - leftHip.y) / torso,
+      rightRest: (rightKnee.y - rightHip.y) / torso,
+      torsoLean: lean / torso,
+    },
   };
 }
 

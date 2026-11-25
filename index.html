@@ -9,22 +9,13 @@
   <body>
     <main class="app">
       <header>
-        <span class="brand">virtualter <small>protótipo local</small></span
-        ><span class="header-note">Movimento no seu ritmo</span>
+        <span class="brand">homephysio</span>
       </header>
       <section class="layout">
         <div class="panel">
-          <div data-phase="welcome loading">
-            <h1>Um movimento de cada vez.</h1>
-            <p>
-              Digite o código da sua sessão para consultar a atividade e se
-              preparar para começar.
-            </p>
-            <div class="notice">
-              <strong>Antes de começar</strong><br />Escolha um local iluminado
-              e siga o enquadramento indicado para a atividade. Respeite seus
-              limites.
-            </div>
+          <div class="welcome" data-phase="welcome loading">
+            <h1>Fisioterapia em casa</h1>
+            <p>Digite o código enviado pelo seu fisioterapeuta.</p>
 
             <form id="code-form">
               <label for="session-code">Código da sessão</label>
@@ -39,10 +30,8 @@
                   spellcheck="false"
                   title="Digite o código fornecido pelo fisioterapeuta"
                   required
-                  placeholder="Exemplo: BH5KN3"
-                /><button id="access-plan" type="submit">
-                  Acessar <span>→</span>
-                </button>
+                  placeholder="Ex.: BH5KN3"
+                /><button id="access-plan" type="submit">Acessar</button>
               </div>
             </form>
             <p class="demo-note">
@@ -54,43 +43,38 @@
                 aria-expanded="false"
                 aria-controls="demo-setup"
               >
-                Explore uma demonstração livre
+                Experimentar demonstração
               </button>
-              Jogue sem vínculo com fisioterapeuta.
             </p>
             <div id="demo-setup" hidden></div>
-            <p class="fine">
-              O vídeo é processado neste dispositivo. O detector precisa de
-              conexão para carregar seus arquivos.
-            </p>
           </div>
           <div data-phase="plan" hidden>
-            <h1>Olá, <span id="plan-name"></span>.</h1>
-            <p id="plan-intro">
-              Confira a atividade definida pelo seu fisioterapeuta:
-            </p>
-            <div class="plan-card">
-              <h2 id="plan-title"></h2>
-              <p id="plan-description"></p>
+            <h1 id="plan-title"></h1>
+            <p id="plan-description"></p>
+            <dl class="plan-details">
+              <div>
+                <dt>Posição</dt>
+                <dd id="expected-posture"></dd>
+              </div>
+              <div id="plan-metrics" hidden>
+                <dt>Métricas</dt>
+                <dd id="plan-metric-labels"></dd>
+              </div>
+            </dl>
+            <div class="plan-actions">
+              <button type="button" id="change-code" class="secondary">
+                <span aria-hidden="true">←</span> Voltar
+              </button>
+              <button type="button" id="open-camera">
+                Iniciar sessão <span aria-hidden="true">→</span>
+              </button>
             </div>
-            <p>Posição esperada: <strong id="expected-posture"></strong></p>
-            <button id="open-camera">
-              Preparar minha sessão <span>→</span>
-            </button>
-            <button class="text-button" id="change-code">
-              Usar outro código
-            </button>
-            <section class="history">
-              <h2>Últimas sessões neste navegador</h2>
-              <ul id="history-list"></ul>
-              <p>Histórico salvo somente neste dispositivo.</p>
-            </section>
           </div>
           <div data-phase="opening" hidden>
             <h1>Conectando a câmera...</h1>
             <p>
-              Autorize o uso da câmera no navegador. Você pode cancelar enquanto
-              aguarda.
+              Autorize o uso da câmera no navegador. O vídeo é processado neste
+              dispositivo.
             </p>
           </div>
           <div data-phase="preparation-error" hidden>
@@ -111,6 +95,9 @@
               aria-label="Progresso da calibração automática"
             ></progress>
           </div>
+          <p class="camera-tip" data-phase="camera calibrating" hidden>
+            Escolha um local iluminado e ajuste o enquadramento indicado.
+          </p>
           <details
             class="preparation-help"
             data-phase="camera calibrating"
@@ -146,16 +133,16 @@
           ></p>
           <div data-phase="summary" hidden>
             <h1 id="summary-title">Sessão finalizada</h1>
-            <p id="summary-text"></p>
+            <ul id="summary-text" hidden></ul>
             <div class="notice">
-              <span id="save-status">Salvando resultado local...</span
-              ><br />Este resumo não é uma avaliação clínica.
+              <span id="save-status" role="status"></span><br />Este resumo não
+              é uma avaliação clínica.
             </div>
             <button id="restart">Voltar à atividade <span>→</span></button>
           </div>
           <p id="pending-status" data-phase="plan" hidden role="status"></p>
           <button id="retry-save" class="secondary" hidden>
-            Tentar salvar resultados pendentes
+            Reenviar resultados pendentes
           </button>
           <button
             class="secondary cancel"
@@ -170,28 +157,11 @@
         <aside
           class="visual"
           aria-label="Prévia da câmera e representação do movimento"
+          data-phase="camera calibrating playing paused resuming"
+          hidden
         >
-          <div class="visual-copy">
-            <span>SEU ESPAÇO DE MOVIMENTO</span>
-            <h2>Comece de onde<br />você está.</h2>
-            <p>Uma sessão pensada para acompanhar o seu ritmo.</p>
-          </div>
-          <div
-            class="stage-heading"
-            data-phase="camera calibrating playing paused resuming"
-            hidden
-          >
-            <span>VIRTUALTER · ÁREA DE JOGO</span
-            ><strong>Seu movimento é o controle</strong>
-          </div>
-          <div
-            id="camera-preview"
-            class="video-wrap"
-            data-phase="camera calibrating playing paused resuming"
-            hidden
-          >
-            <video id="camera" autoplay muted playsinline></video
-            ><span class="camera-label">CÂMERA AO VIVO</span>
+          <div id="camera-preview" class="video-wrap">
+            <video id="camera" autoplay muted playsinline></video>
             <div
               class="resume-countdown"
               data-phase="resuming"

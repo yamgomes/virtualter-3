@@ -24,7 +24,7 @@ service cloud.firestore {
         "walking": {"metrics":["activeMs","pausedMs","kneeHeight","balance"],"targetsPattern":"^$","independentHold":false,"requiresSets":false,"report":{"movement":"lowerBody","attempts":"unscored"}},
         "shoulder": {"metrics":["hits","misses","points","activeMs","pausedMs"],"targetsPattern":"^(100|[0-9]{1,2}(\\.[0-9]{1,2})?)/(100|[0-9]{1,2}(\\.[0-9]{1,2})?)(,(100|[0-9]{1,2}(\\.[0-9]{1,2})?)/(100|[0-9]{1,2}(\\.[0-9]{1,2})?))*$","independentHold":false,"requiresSets":false,"report":{"movement":"shoulderRepetitions","attempts":"timed"}},
         "shoulderElevation": {"metrics":["hits","misses","points","activeMs","pausedMs"],"targetsPattern":"^$","independentHold":true,"requiresSets":true,"report":{"movement":"shoulderRepetitions","attempts":"sets"}},
-        "surfing": {"metrics":["hits","misses","points","activeMs","pausedMs"],"targetsPattern":"^(100|[0-9]{1,2}(\\.[0-9]{1,2})?)(,(100|[0-9]{1,2}(\\.[0-9]{1,2})?))*$","independentHold":false,"requiresSets":false,"report":null},
+        "surfing": {"metrics":["hits","misses","points","activeMs","pausedMs"],"targetsPattern":"^(100|[0-9]{1,2}(\\.[0-9]{1,2})?)(,(100|[0-9]{1,2}(\\.[0-9]{1,2})?))*$","independentHold":false,"requiresSets":false,"report":{"movement":"none","attempts":"timed"}},
         "goalkeeper": {"metrics":["hits","misses","points","activeMs","pausedMs"],"targetsPattern":"^$","independentHold":false,"requiresSets":false,"report":{"movement":"shoulderRepetitions","attempts":"fixed"}}
       };
     }
@@ -57,7 +57,7 @@ service cloud.firestore {
     }
     function resultCount(value, max) { return value is int && bounded(value, 0, max); }
     function validMovement(m, kind) {
-      return m is map && (kind == 'lowerBody'
+      return kind == 'none' ? m == null : m is map && (kind == 'lowerBody'
         ? m.keys().hasOnly(['lowerBody']) && m.lowerBody is map
           && m.lowerBody.keys().hasOnly(['kneeHeight','balance'])
           && m.lowerBody.kneeHeight is map

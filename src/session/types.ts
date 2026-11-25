@@ -46,7 +46,6 @@ export interface SessionRepository {
   publishesResults?(plan: SessionPlan): boolean;
   validateAccess?(plan: SessionPlan): Promise<boolean>;
   getPlanByCode(code: string): Promise<SessionPlan | null>;
-  listResults(patientId: string): Promise<SessionResult[]>;
   saveResult(result: SessionResult): Promise<void>;
 }
 const text = (v: unknown): v is string =>

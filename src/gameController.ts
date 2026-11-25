@@ -1,10 +1,6 @@
 import type { ActivityFactory, GameActivity } from './games/contracts';
 import { PoseOverlay } from './presentation/poseOverlay';
-import {
-  planMetricsText,
-  sessionHistoryDetail,
-  sessionSummary,
-} from './presentation/sessionText';
+import { planMetricsText, sessionSummary } from './presentation/sessionText';
 import { DemoSetup } from './session/demoSetup';
 import { ResultOutbox } from './session/resultOutbox';
 import { SessionClock } from './session/sessionClock';
@@ -33,7 +29,12 @@ type Phase =
   | 'summary';
 const RESUME_COUNTDOWN_MS = 3000;
 const POSTURE_RECOVERY_MS = 3000;
+const RETURNED_SESSION_CODE_KEY = 'virtualter.returnedSessionCode';
 type PosePreview = Pick<PoseOverlay, 'setVisible' | 'update' | 'dispose'>;
+type Delivery = {
+  id: string;
+  status: 'sending' | 'submitted' | 'invalid' | 'practice';
+};
 
 function cameraCouldNotStart(error: unknown): boolean {
   return (
@@ -62,7 +63,7 @@ export class GameController {
   private repository: SessionRepository;
   private createActivity: ActivityFactory;
   private outbox: ResultOutbox;
-  private lastResult: SessionResult | null = null;
+  private delivery: Delivery | null = null;
   private raf = 0;
   private disposed = false;
   private accessCheckAt = 0;
@@ -96,6 +97,13 @@ export class GameController {
     if (sharedCode) {
       this.el<HTMLInputElement>('session-code').value = sharedCode;
       void this.loadPlan(sharedCode);
+    } else {
+      try {
+        this.el<HTMLInputElement>('session-code').value =
+          window.sessionStorage.getItem(RETURNED_SESSION_CODE_KEY) ?? '';
+      } catch {
+        /* O campo continua disponível se o armazenamento estiver bloqueado. */
+      }
     }
   }
   private el<T extends HTMLElement>(id: string): T {
@@ -135,6 +143,17 @@ export class GameController {
     this.el('change-code').addEventListener(
       'click',
       () => {
+        const code = this.el<HTMLInputElement>('session-code').value;
+        try {
+          window.sessionStorage.setItem(RETURNED_SESSION_CODE_KEY, code);
+        } catch {
+          /* Voltar funciona mesmo se o armazenamento estiver bloqueado. */
+        }
+        const url = new URL(window.location.href);
+        if (url.searchParams.has('code')) {
+          url.searchParams.delete('code');
+          window.history.replaceState(window.history.state, '', url);
+        }
         this.planGeneration++;
         this.activity?.dispose();
         this.activity = null;
@@ -223,7 +242,6 @@ export class GameController {
         this.phase = 'plan';
         this.message('');
         this.update();
-        void this.refreshHistory();
       },
       options
     );
@@ -256,14 +274,20 @@ export class GameController {
     window.addEventListener(
       'pagehide',
       () => {
+        this.outbox.preserveUnconfirmed();
         this.pause('Sessão pausada.');
       },
       options
     );
-    window.addEventListener('beforeunload', () => {
-      // O navegador libera o contexto de áudio ao encerrar o documento.
-      this.dispose(false);
-    }, options);
+    window.addEventListener(
+      'beforeunload',
+      () => {
+        this.outbox.preserveUnconfirmed();
+        // O navegador libera o contexto de áudio ao encerrar o documento.
+        this.dispose(false);
+      },
+      options
+    );
   }
   private async loadPlan(code: string, demoPlan?: SessionPlan): Promise<void> {
     if (!['welcome', 'loading'].includes(this.phase)) return;
@@ -284,18 +308,11 @@ export class GameController {
       this.accessCheckAt = 0;
       this.activity?.dispose();
       this.activity = this.createActivity(this.plan);
-      this.el('plan-name').textContent = plan.displayName;
       this.el('plan-title').textContent = plan.title;
-      this.el('plan-intro').textContent =
-        plan.patientId === 'jogador-demo'
-          ? 'Confira a demonstração que você configurou:'
-          : 'Confira a atividade definida pelo seu fisioterapeuta:';
-      this.el('change-code').textContent =
-        plan.patientId === 'jogador-demo'
-          ? 'Escolher outro jogo ou ajustar parâmetros'
-          : 'Usar outro código';
-      this.el('plan-description').textContent =
-        this.activity.planDescription + planMetricsText(plan.metrics);
+      this.el('plan-description').textContent = this.activity.planDescription;
+      const metrics = planMetricsText(plan.metrics);
+      this.el('plan-metrics').hidden = !metrics;
+      this.el('plan-metric-labels').textContent = metrics;
       const posture = this.activity.posture;
       this.el('expected-posture').textContent = posture
         ? {
@@ -306,12 +323,11 @@ export class GameController {
         : 'Sem posição definida';
       this.el('preparation-instructions').textContent =
         this.activity.instructions;
-      this.lastResult = null;
+      this.delivery = null;
       this.phase = 'plan';
       this.message('');
       this.update();
       await this.syncResults();
-      await this.refreshHistory();
     } catch (error) {
       if (this.disposed || generation !== this.planGeneration) return;
       this.phase = 'welcome';
@@ -321,34 +337,6 @@ export class GameController {
           : 'Não foi possível carregar a atividade.'
       );
       this.update();
-    }
-  }
-  private async refreshHistory(): Promise<void> {
-    const plan = this.plan,
-      generation = this.planGeneration;
-    if (!plan) return;
-    const list = this.el('history-list');
-    list.replaceChildren();
-    try {
-      const results = await this.repository.listResults(plan.patientId);
-      if (this.disposed || generation !== this.planGeneration) return;
-      if (!results.length) {
-        list.textContent = 'Nenhuma sessão salva neste navegador.';
-        return;
-      }
-      for (const result of results.slice(0, 5)) {
-        const row = document.createElement('li'),
-          title = document.createElement('strong'),
-          detail = document.createElement('span');
-        title.textContent = result.plan.title;
-        detail.textContent = sessionHistoryDetail(result);
-        row.append(title, detail);
-        list.append(row);
-      }
-    } catch {
-      if (generation === this.planGeneration)
-        list.textContent =
-          'Histórico indisponível. Você ainda pode iniciar a atividade.';
     }
   }
   private async openCamera(resume: boolean): Promise<void> {
@@ -770,41 +758,88 @@ export class GameController {
       completedAt: new Date().toISOString(),
       endReason,
     };
-    this.lastResult = result;
-    this.outbox.enqueue(result);
+    const canPublish = this.publishesResults(result.plan);
+    const delivery: Delivery = {
+      id: result.id,
+      status: canPublish ? 'sending' : 'practice',
+    };
+    this.delivery = delivery;
     const summary = sessionSummary(result);
     this.el('summary-title').textContent = summary.title;
-    this.el('summary-text').textContent = summary.details;
+    const summaryList = this.el('summary-text');
+    const summaryItems = summary.details.map((detail) => {
+      const item = document.createElement('li');
+      item.textContent = detail;
+      return item;
+    });
+    summaryList.replaceChildren(...summaryItems);
+    summaryList.hidden = summaryItems.length === 0;
     this.phase = 'summary';
     this.clock = null;
     this.stopCamera();
     this.activity.dispose();
     this.activity = null;
     this.overlay.setVisible(true);
+    this.message('');
     this.update();
-    await this.syncResults();
+    if (!canPublish) return;
+    try {
+      await this.outbox.send(this.repository, result);
+      delivery.status = 'submitted';
+    } catch (error) {
+      console.error(error);
+      delivery.status = 'invalid';
+    }
+    if (!this.disposed) this.updateSaveStatus();
+  }
+  private publishesResults(plan: SessionPlan): boolean {
+    return this.repository.publishesResults?.(plan) ?? true;
   }
   private async syncResults(): Promise<void> {
     const plan = this.plan;
-    if (!plan || this.disposed) return;
+    if (
+      !plan ||
+      this.disposed ||
+      !this.publishesResults(plan) ||
+      this.outbox.count(plan.patientId) === 0
+    )
+      return;
     const generation = this.planGeneration;
-    this.el('save-status').textContent = 'Salvando resultados...';
     try {
       await this.outbox.flush(this.repository, plan.patientId);
     } catch {
       /* A fila conserva os resultados para nova tentativa. */
     }
     if (this.disposed || generation !== this.planGeneration) return;
-    const pending = this.outbox.count(plan.patientId);
-    const status = pending
-      ? `${pending} resultado(s) pendente(s). ${this.outbox.durable ? 'Guardado(s) neste dispositivo para reenvio.' : 'Mantido(s) apenas nesta aba; tente salvar antes de fechá-la.'}`
-      : this.lastResult && this.repository.publishesResults?.(plan)
-        ? 'Resultado enviado ao terapeuta.'
-        : 'Resultados salvos neste dispositivo.';
-    this.el('save-status').textContent = status;
-    this.el('pending-status').textContent = pending ? status : '';
-    this.el('retry-save').hidden = pending === 0;
-    if (this.lastResult && this.phase === 'summary') this.message('');
+    this.updateSaveStatus();
+  }
+  private updateSaveStatus(): void {
+    const plan = this.plan;
+    const pending =
+      plan && this.publishesResults(plan)
+        ? this.outbox.count(plan.patientId)
+        : 0;
+    const pendingStatus = pending
+      ? `${pending === 1 ? '1 resultado pendente.' : `${pending} resultados pendentes.`} ${
+          this.outbox.durable
+            ? 'Reenvio disponível neste navegador.'
+            : 'Dados disponíveis apenas nesta aba. Reenvie antes de fechá-la.'
+        }`
+      : '';
+    this.el('pending-status').textContent = pendingStatus;
+    this.el('retry-save').hidden =
+      !pending || (this.phase !== 'plan' && this.phase !== 'summary');
+    if (this.phase !== 'summary' || !this.delivery) return;
+    const { id, status } = this.delivery;
+    const messages: Record<Delivery['status'], string> = {
+      sending: 'Enviando resultado…',
+      submitted: 'Resultado enviado ao terapeuta.',
+      invalid: 'Não foi possível preparar o resultado para envio.',
+      practice: 'Resultado disponível apenas nesta sessão.',
+    };
+    this.el('save-status').textContent = this.outbox.has(id)
+      ? pendingStatus
+      : [messages[status], pendingStatus].filter(Boolean).join(' ');
   }
   private stopCamera(): void {
     this.cameraGeneration++;
@@ -875,6 +910,7 @@ export class GameController {
     this.el<HTMLButtonElement>('access-plan').disabled =
       this.phase === 'loading';
     this.el<HTMLButtonElement>('try-demo').disabled = this.phase === 'loading';
+    this.updateSaveStatus();
   }
   dispose(closeAudio = true): void {
     if (this.disposed) return;

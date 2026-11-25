@@ -1,6 +1,5 @@
 import { DEFAULT_GOALKEEPER_FLIGHT_MS } from '@homephysio/contracts';
-import { isSessionResult } from './types';
-import type { SessionPlan, SessionRepository, SessionResult } from './types';
+import type { SessionPlan } from './types';
 
 const identity = {
   version: 1,
@@ -95,28 +94,10 @@ const plans: Record<string, SessionPlan> = {
     },
   },
 };
-export const RESULTS_KEY = 'virtualter.mock.session-results.v2';
-/** Dados fictícios. O histórico v1 permanece intacto sob sua chave anterior. */
-export class MockSessionRepository implements SessionRepository {
+/** Planos fictícios usados na demonstração e nos testes. */
+export class MockSessionRepository {
   async getPlanByCode(code: string): Promise<SessionPlan | null> {
     const key = code.trim().toUpperCase();
     return Object.hasOwn(plans, key) ? structuredClone(plans[key]) : null;
-  }
-  async listResults(patientId: string): Promise<SessionResult[]> {
-    return this.read()
-      .filter((r) => r.patientId === patientId)
-      .sort((a, b) => b.completedAt.localeCompare(a.completedAt));
-  }
-  async saveResult(result: SessionResult): Promise<void> {
-    if (!isSessionResult(result)) throw new Error('Resultado inválido');
-    const results = this.read().filter((r) => r.id !== result.id);
-    results.push(result);
-    localStorage.setItem(RESULTS_KEY, JSON.stringify(results));
-  }
-  private read(): SessionResult[] {
-    const data: unknown = JSON.parse(localStorage.getItem(RESULTS_KEY) ?? '[]');
-    if (!Array.isArray(data) || !data.every(isSessionResult))
-      throw new Error('Histórico local inválido; os dados foram preservados.');
-    return data;
   }
 }

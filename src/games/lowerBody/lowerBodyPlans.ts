@@ -49,8 +49,6 @@ export const lowerBodyPlans = {
         `${hits} levantamentos (meta mínima de ${plannedAttempts})`,
       misses: ({ hits, plannedAttempts }) =>
         `${Math.max(0, plannedAttempts - hits)} levantamentos faltaram para a meta`,
-      history: ({ hits, plannedAttempts }) =>
-        `${hits}/${plannedAttempts} levantamentos`,
     },
   }),
   kneeJuggle: defineGamePlan('kneeJuggle', {
@@ -61,16 +59,11 @@ export const lowerBodyPlans = {
       hits: ({ hits, attempts }) =>
         `${hits} toques em ${attempts.length} bolas`,
       misses: ({ misses }) => `${misses} bolas perdidas`,
-      history: ({ hits, plannedAttempts }) =>
-        `${hits}/${plannedAttempts} toques`,
     },
   }),
   walking: defineGamePlan('walking', {
     ...shared,
     configure: timedSession,
     resultLimits: () => ({ planned: 0, fixed: true }),
-    summary: {
-      history: ({ activeMs }) => `${Math.round(activeMs / 1000)} s ativos`,
-    },
   }),
 };

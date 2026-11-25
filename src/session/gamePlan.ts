@@ -23,7 +23,7 @@ interface ResultLimits {
 
 type ResultText = Pick<
   import('./types').SessionResult,
-  'hits' | 'misses' | 'points' | 'plannedAttempts' | 'attempts' | 'activeMs'
+  'hits' | 'misses' | 'plannedAttempts' | 'attempts'
 >;
 
 export interface GamePlanOptions<Config extends GameConfig> {
@@ -35,7 +35,6 @@ export interface GamePlanOptions<Config extends GameConfig> {
   summary?: {
     hits?: (result: ResultText) => string;
     misses?: (result: ResultText) => string;
-    history?: (result: ResultText) => string;
   };
 }
 

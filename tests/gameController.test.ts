@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { GameController } from '../src/gameController';
-import { ResultOutbox } from '../src/session/resultOutbox';
+import { OUTBOX_KEY, ResultOutbox } from '../src/session/resultOutbox';
 import type { PoseSource } from '../src/tracking/types';
 import type { PoseFrame } from '../src/tracking/types';
 import type {
@@ -49,7 +49,11 @@ function deferred<T>() {
   });
   return { promise, resolve };
 }
-function setup(withPosture = false) {
+function setup(
+  withPosture = false,
+  href = 'http://localhost/',
+  tabStorage = new Map<string, string>()
+) {
   let now = 0,
     rafId = 0,
     stopped = 0,
@@ -84,10 +88,21 @@ function setup(withPosture = false) {
     getVideoTracks: () => [track],
   } as unknown as MediaStream;
   const media = { getUserMedia: async () => stream };
+  const location = { href };
   for (const [key, value] of Object.entries({
     document: documentStub,
     window: Object.assign(new ElementStub(), {
-      location: { href: 'http://localhost/' },
+      location,
+      history: {
+        state: null,
+        replaceState(_state: unknown, _unused: string, url: URL) {
+          location.href = url.href;
+        },
+      },
+      sessionStorage: {
+        getItem: (key: string) => tabStorage.get(key) ?? null,
+        setItem: (key: string, value: string) => tabStorage.set(key, value),
+      },
     }),
     navigator: { mediaDevices: media },
     performance: { now: () => now },
@@ -120,12 +135,10 @@ function setup(withPosture = false) {
     dispose() {},
   };
   const saved: SessionResult[] = [];
+  const storage = new Map<string, string>();
   const repository: SessionRepository = {
     async getPlanByCode() {
       return structuredClone(plan);
-    },
-    async listResults() {
-      return [];
     },
     async saveResult(r) {
       saved.push(r);
@@ -166,10 +179,15 @@ function setup(withPosture = false) {
     () => activity,
     { setVisible() {}, update() {}, dispose() {} },
     new ResultOutbox({
-      getItem() {
-        return null;
+      getItem(key) {
+        return storage.get(key) ?? null;
       },
-      setItem() {},
+      setItem(key, value) {
+        storage.set(key, value);
+      },
+      removeItem(key) {
+        storage.delete(key);
+      },
     })
   );
   const step = async (time: number) => {
@@ -203,6 +221,7 @@ function setup(withPosture = false) {
     events,
     documentStub,
     saved,
+    storage,
     getStopped: () => stopped,
     getInitialized: () => initialized,
     setComplete: () => {
@@ -215,6 +234,30 @@ function setup(withPosture = false) {
     },
   };
 }
+
+test('voltar de um link compartilhado mantém o código sem abrir o plano ao recarregar', async () => {
+  const tabStorage = new Map<string, string>();
+  const env = setup(
+    false,
+    'http://localhost/jogos/?code=ABC123&lang=pt#inicio',
+    tabStorage
+  );
+  await wait();
+  assert.equal(env.elements.get('plan-title')!.textContent, plan.title);
+
+  env.click('change-code');
+  const url = window.location.href;
+  assert.equal(url, 'http://localhost/jogos/?lang=pt#inicio');
+  env.controller.dispose();
+
+  const reloaded = setup(false, url, tabStorage);
+  await wait();
+  assert.equal(reloaded.elements.get('plan-title')!.textContent, '');
+  assert.equal(reloaded.elements.get('session-code')!.value, 'ABC123');
+  await reloaded.load();
+  assert.equal(reloaded.elements.get('plan-title')!.textContent, plan.title);
+  reloaded.controller.dispose();
+});
 
 test('três segundos de postura correta iniciam a contagem sem clicar em retomar', async () => {
   const env = setup(true);
@@ -350,10 +393,30 @@ test('falha de gravação preserva resultado e reenvio usa o mesmo ID', async ()
   env.click('finish');
   await wait();
   assert.match(env.elements.get('save-status')!.textContent, /pendente/);
+  assert.equal(JSON.parse(env.storage.get(OUTBOX_KEY)!)[0].id, ids[0]);
   env.click('retry-save');
   await wait();
   assert.equal(ids.length, 2);
   assert.equal(ids[0], ids[1]);
-  assert.match(env.elements.get('save-status')!.textContent, /salvos/);
+  assert.match(
+    env.elements.get('save-status')!.textContent,
+    /enviado ao terapeuta/
+  );
+  assert.equal(env.storage.has(OUTBOX_KEY), false);
+  env.controller.dispose();
+});
+
+test('demonstração exibe o resumo sem enviar ou persistir o resultado', async () => {
+  const env = setup();
+  env.repository.publishesResults = () => false;
+  await env.start();
+  env.click('finish');
+  await wait();
+  assert.match(
+    env.elements.get('save-status')!.textContent,
+    /apenas nesta sessão/
+  );
+  assert.equal(env.saved.length, 0);
+  assert.equal(env.storage.size, 0);
   env.controller.dispose();
 });

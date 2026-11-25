@@ -82,10 +82,6 @@ export class FirebaseSessionRepository implements SessionRepository {
     );
     return snapshot.exists() && snapshot.data()['revision'] === loaded.revision;
   }
-  listResults(patientId: string): Promise<SessionResult[]> {
-    return this.local.listResults(patientId);
-  }
-
   publishesResults(plan: SessionPlan): boolean {
     return (
       plan.patientId !== 'jogador-demo' &&
@@ -95,17 +91,11 @@ export class FirebaseSessionRepository implements SessionRepository {
 
   async saveResult(result: SessionResult): Promise<void> {
     const { gameId, version, title } = result.plan;
-    const { movement } = result;
-    if (!movement || !this.publishesResults(result.plan)) {
-      await this.local.saveResult(result);
-      return;
-    }
+    const profile = GAME_DEFINITIONS[gameId].report;
+    if (!profile || !this.publishesResults(result.plan)) return;
+    const movement = profile.movement === 'none' ? null : result.movement;
+    if (movement === undefined) throw Error('Métricas de movimento ausentes.');
     const access = this.loaded;
-    try {
-      await this.local.saveResult(result);
-    } catch (error) {
-      console.warn('Histórico local indisponível:', error);
-    }
     if (
       !access ||
       access.patientId !== result.patientId ||

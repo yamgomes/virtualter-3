@@ -1,10 +1,11 @@
 import { isSessionResult } from './types';
 import type { SessionRepository, SessionResult } from './types';
 export const OUTBOX_KEY = 'virtualter.pending-results.v2';
-type StoragePort = Pick<Storage, 'getItem' | 'setItem'>;
-/** Mantém o mesmo ID em toda tentativa. Persistência local é explícita no protótipo. */
+type StoragePort = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
+/** Só persiste envios que falharam e mantém o mesmo ID para o reenvio. */
 export class ResultOutbox {
   private pending = new Map<string, SessionResult>();
+  private inFlight = new Map<string, SessionResult>();
   private storage: StoragePort;
   private syncing: Promise<void> | null = null;
   private corrupt = false;
@@ -13,6 +14,7 @@ export class ResultOutbox {
     storage: StoragePort = {
       getItem: (key) => localStorage.getItem(key),
       setItem: (key, value) => localStorage.setItem(key, value),
+      removeItem: (key) => localStorage.removeItem(key),
     }
   ) {
     this.storage = storage;
@@ -34,10 +36,30 @@ export class ResultOutbox {
       this.durable = false;
     }
   }
-  enqueue(result: SessionResult): void {
+  async send(
+    repository: SessionRepository,
+    result: SessionResult
+  ): Promise<void> {
     if (!isSessionResult(result)) throw new Error('Resultado inválido');
-    this.pending.set(result.id, structuredClone(result));
-    this.persist();
+    const snapshot = structuredClone(result);
+    this.inFlight.set(snapshot.id, snapshot);
+    try {
+      await repository.saveResult(structuredClone(snapshot));
+      if (this.pending.delete(snapshot.id)) this.persist();
+    } catch {
+      this.pending.set(snapshot.id, snapshot);
+      this.persist();
+    } finally {
+      this.inFlight.delete(snapshot.id);
+    }
+  }
+  preserveUnconfirmed(): void {
+    const size = this.pending.size;
+    for (const [id, result] of this.inFlight) this.pending.set(id, result);
+    if (this.pending.size !== size) this.persist();
+  }
+  has(id: string): boolean {
+    return this.pending.has(id);
   }
   count(patientId: string): number {
     return [...this.pending.values()].filter((r) => r.patientId === patientId)
@@ -49,10 +71,12 @@ export class ResultOutbox {
       return;
     }
     try {
-      this.storage.setItem(
-        OUTBOX_KEY,
-        JSON.stringify([...this.pending.values()])
-      );
+      if (this.pending.size)
+        this.storage.setItem(
+          OUTBOX_KEY,
+          JSON.stringify([...this.pending.values()])
+        );
+      else this.storage.removeItem(OUTBOX_KEY);
       this.durable = true;
     } catch {
       this.durable = false;

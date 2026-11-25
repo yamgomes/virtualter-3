@@ -11,7 +11,7 @@ npm run dev
 
 Códigos fictícios: **QWER**, **ASDF** e **ZXCV** para ombros; **SURF** para surfe com o lado esquerdo voltado à câmera; **ONDA** para surfe com o lado direito. Siga o enquadramento exibido antes de calibrar.
 
-Na tela inicial, **Explore uma demonstração livre** abre uma partida local de goleiro, sem código ou vínculo com fisioterapeuta. O resultado fica salvo neste navegador.
+Na tela inicial, **Experimentar demonstração** permite escolher um jogo sem código ou vínculo com fisioterapeuta. O resultado aparece ao fim da partida.
 
 ```sh
 npm run typecheck
@@ -19,7 +19,7 @@ npm test
 npm run build
 ```
 
-Os dados permanecem neste navegador. Não há Firebase ou autenticação implantados. O detector processa o vídeo localmente, mas ainda baixa o modelo de pose pela internet. As medidas são projeções 2D e o protótipo não foi validado clinicamente.
+O cliente envia os resultados das sessões prescritas ao Firebase. O navegador guarda os envios pendentes até a confirmação do servidor. O detector processa o vídeo localmente e baixa o modelo de pose pela internet. As medidas são projeções 2D e o protótipo não foi validado clinicamente.
 
 ## Arquitetura ativa
 

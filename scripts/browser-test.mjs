@@ -71,12 +71,16 @@ try {
           return { timestamp: performance.now(), aspectRatio: 1, points };
         }
       };
-      const repo = new MockSessionRepository(), load = repo.getPlanByCode.bind(repo);
-      repo.getPlanByCode = async code => {
-        const plan = await load(code); if (!plan) return null;
-        plan.config.sessionDurationMs = 4000; plan.config.pointsPerHit = 15; plan.config.repetitions = 1; plan.config.holdMs = 200;
-        plan.config.targets = plan.gameId === 'shoulder' ? [{left:0.5,right:0.5},{left:0.8,right:0.8}] : [0.5,0.8];
-        return plan;
+      const plans = new MockSessionRepository();
+      window.__sent = [];
+      const repo = {
+        async getPlanByCode(code) {
+          const plan = await plans.getPlanByCode(code); if (!plan) return null;
+          plan.config.sessionDurationMs = 4000; plan.config.pointsPerHit = 15; plan.config.repetitions = 1; plan.config.holdMs = 200;
+          plan.config.targets = plan.gameId === 'shoulder' ? [{left:0.5,right:0.5},{left:0.8,right:0.8}] : [0.5,0.8];
+          return plan;
+        },
+        async saveResult(result) { window.__sent.push(result); },
       };
       window.__controller = new GameController(source, repo, createActivity);
     `,
@@ -127,11 +131,10 @@ try {
     }, max * 0.8);
     await page.locator('#summary-title').waitFor({ state: 'visible' });
     await page.waitForFunction(() =>
-      document.querySelector('#save-status').textContent.includes('salvos')
+      document.querySelector('#save-status').textContent.includes('enviado')
     );
-    const results = await page.evaluate(() =>
-      JSON.parse(localStorage.getItem('virtualter.mock.session-results.v2'))
-    );
+    const results = await page.evaluate(() => window.__sent);
+    assert.equal(await page.evaluate(() => localStorage.length), 0);
     assert.equal(results.length, 1);
     assert.ok(results[0].hits >= 2);
     assert.ok(results[0].hits > results[0].plannedAttempts);
@@ -147,7 +150,7 @@ try {
       'PASS browser:',
       code,
       viewport.width,
-      'px, calibração → pausa → conclusão → histórico'
+      'px, calibração → pausa → conclusão → envio'
     );
   }
   assert.deepEqual(errors, []);

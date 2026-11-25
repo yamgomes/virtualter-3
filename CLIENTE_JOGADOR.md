@@ -63,20 +63,18 @@ O painel do fisioterapeuta será desenvolvido no projeto separado `C:/Repo/homep
 
 O resultado v2 inclui ID estável, versão do jogo, cópia do plano, calibração utilizada, acertos, erros, pontos, resumo de cada tentativa concluída, tempo ativo/pausado/total e motivo de encerramento (`completed`, `stopped`, `error`). O total de tentativas pode ser menor que o planejado em uma sessão interrompida. A posição atual de uma tentativa incompleta não é persistida. Não são gravados vídeos ou séries contínuas de landmarks. Pontuação é lúdica, sem interpretação clínica.
 
-`ResultOutbox` coloca o resultado numa fila local antes do envio. Em caso de falha, mantém o mesmo ID para reenvio pelo botão ou quando a conexão retorna. A fila sobrevive à recarga quando o armazenamento local está disponível. Se houver falta de espaço ou bloqueio, o resultado fica apenas na memória da aba, com aviso explícito. Conteúdo corrompido não é sobrescrito. A sincronização é serializada e seleciona apenas o jogador do plano atual.
+`ResultOutbox` tenta enviar o resultado ao fim da sessão. Se o envio falhar ou a página for fechada antes da confirmação, guarda o resultado pendente com o mesmo ID. O reenvio pode ocorrer pelo botão, no retorno da conexão ou ao carregar o plano. Após a confirmação, a fila remove o resultado do armazenamento. Se o navegador bloquear a gravação, o resultado fica na memória da aba enquanto ela estiver aberta. A sincronização é serializada e seleciona apenas o jogador do plano atual.
 
 No Semáforo, no Goleiro e na elevação convencional, a entrada de ombros conta elevações de cada braço ao atingir 90% da amplitude individual medida. Depois de cada elevação, o braço precisa descer a 70% ou menos para habilitar outra contagem. A calibração inicial, a pausa e a perda de rastreamento não contam como repetições. A atividade devolve essa medida no resultado, separada do placar.
 
-O adaptador Firebase envia o placar, as elevações por lado e os tempos agregados pelo ID da sessão. O terapeuta responsável vê esses resultados no histórico do paciente. Se o envio falhar, a fila local conserva o resultado para nova tentativa enquanto o código e a revisão da terapia estiverem ativos. As demonstrações e o Surfe salvam no navegador.
-
-O repositório de demonstração faz upsert no `localStorage`. Ele preserva o histórico v1 sob sua chave original, mas exibe somente resultados v2, pois os registros antigos não contêm calibração e cópia do plano. Dados locais continuam acessíveis a quem compartilha este navegador; a persistência local deverá ser revista para o produto autenticado.
+O adaptador Firebase envia o placar, os tempos agregados e as medidas de movimento disponíveis pelo ID da sessão. O terapeuta responsável vê esses resultados no histórico do paciente. O reenvio depende do código e da revisão da terapia permanecerem ativos. A demonstração exibe o resultado somente na tela de encerramento.
 
 ## Acrescentar um jogo
 
 1. Em `packages/contracts/games/`, defina o ID, os campos da prescrição, os valores iniciais, a postura e as métricas. Importe a definição na lista de `packages/contracts/game-definitions.ts`. O formulário profissional e a demonstração leem esse catálogo.
 2. Em `src/games/<jogo>/`, declare o plano com `defineGamePlan`. Implemente a conversão da prescrição e, quando necessário, a validação da configuração e da calibração, a contagem esperada de tentativas e os textos do resumo local. Registre o plano em `src/games/planRegistry.ts`. Esse módulo roda também nos testes e deve funcionar sem importar cenas ou CSS.
 3. Implemente o `GameActivity` e adicione sua fábrica a `src/games/registry.ts`. O jogo recebe poses e produz um resultado. Se quiser usar o som de acerto do jogador, devolva o total de acertos em `update()`. `result()` é chamado ao encerrar a sessão. O jogo pode ser escolhido pela demonstração, que dispensa códigos de teste.
-4. Rode `npm run rules:generate` e `npm test`. A lista aceita pelo Firestore é gerada a partir do catálogo. A definição de um jogo pode escolher um perfil existente de publicação em `report`. Sem perfil, o resultado fica no histórico local. A implantação das regras também regenera a lista.
+4. Rode `npm run rules:generate` e `npm test`. A lista aceita pelo Firestore é gerada a partir do catálogo. A definição de um jogo pode escolher um perfil existente de publicação em `report`. Sem perfil, o resultado aparece apenas na tela de encerramento. A implantação das regras também regenera a lista.
 
 Para um jogo que usa os campos e tipos de resultado existentes, os únicos pontos de registro são as três listas. O pacote compartilhado mantém os formatos de prescrição e de resultados disponíveis nos dois clientes. Um novo campo de prescrição ou tipo de métrica persistida exige estender esse contrato e suas regras de validação.
 
@@ -100,4 +98,4 @@ Os antigos `GameMode`, `BaseGameMode`, gerenciadores de `core/` e placeholders f
 
 # Importação local de atividade
 
-Na tela inicial, é possível importar o JSON exportado pelo painel profissional de demonstração. O cliente valida o conteúdo antes de preparar a sessão. O arquivo e o histórico são locais, sem autenticação ou sincronização com o painel; não use dados reais de pacientes. A importação aceita arquivos de até 1 MB.
+Na tela inicial, é possível importar o JSON exportado pelo painel profissional de demonstração. O cliente valida o conteúdo antes de preparar a sessão. O arquivo importado é processado localmente. A importação aceita arquivos de até 1 MB.

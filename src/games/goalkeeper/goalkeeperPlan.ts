@@ -12,7 +12,5 @@ export const goalkeeperPlan = defineGamePlan('goalkeeper', {
     hits: ({ hits, attempts }) =>
       `${hits} defesas em ${attempts.length} chutes`,
     misses: ({ misses }) => `${misses} gols sofridos`,
-    history: ({ hits, plannedAttempts }) =>
-      `${hits}/${plannedAttempts} defesas`,
   },
 });

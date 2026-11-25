@@ -4,7 +4,7 @@ import { defaultTherapy } from '@homephysio/contracts';
 import {
   KneeCalibration,
   measureLegMovement,
-  readLegPose,
+  observeLegPose,
 } from '../src/games/lowerBody/legTracking';
 import { LowerBodyGame } from '../src/games/lowerBody/lowerBodyGame';
 import { therapyPlan } from '../src/session/therapyPlan';
@@ -50,7 +50,7 @@ test('calibra cada joelho após repouso, guardando picos diferentes', () => {
   assert.equal(measured.balance, 0.5);
 });
 
-test('exige que os tornozelos estejam no enquadramento', () => {
+test('mede com o quadro dos ombros aos joelhos, mesmo sem os tornozelos', () => {
   const point = (x: number, y: number) => ({ x, y, visibility: 1 });
   const frame: PoseFrame = {
     timestamp: 0,
@@ -60,15 +60,15 @@ test('exige que os tornozelos estejam no enquadramento', () => {
       rightShoulder: point(0.4, 0.15),
       leftHip: point(0.6, 0.4),
       rightHip: point(0.4, 0.4),
-      leftKnee: point(0.6, 0.6),
-      rightKnee: point(0.4, 0.6),
-      leftAnkle: point(0.6, 0.85),
-      rightAnkle: point(0.4, 0.85),
+      leftKnee: point(0.6, 0.97),
+      rightKnee: point(0.4, 0.97),
     },
   };
-  assert.ok(readLegPose(frame));
-  frame.points.rightAnkle!.visibility = 0.3;
-  assert.equal(readLegPose(frame), null);
+  assert.ok(observeLegPose(frame).sample);
+  frame.points.rightKnee!.y = 1.01;
+  assert.deepEqual(observeLegPose(frame), { sample: null, issue: 'rightKnee' });
+  frame.points.leftKnee!.visibility = 0.3;
+  assert.deepEqual(observeLegPose(frame), { sample: null, issue: 'knees' });
 });
 
 test('conta uma vez por elevação e preserva o tempo durante a pausa', () => {

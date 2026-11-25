@@ -1,17 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {
-  MockSessionRepository,
-  RESULTS_KEY,
-} from '../src/session/mockSessionRepository';
-import { result } from './fixtures';
-const data = new Map<string, string>();
-Object.defineProperty(globalThis, 'localStorage', {
-  value: {
-    getItem: (key: string) => data.get(key) ?? null,
-    setItem: (key: string, value: string) => data.set(key, value),
-  },
-});
+import { MockSessionRepository } from '../src/session/mockSessionRepository';
 const repo = new MockSessionRepository();
 
 test('planos distintos, surfe de cada lado e cópias independentes', async () => {
@@ -31,37 +20,4 @@ test('planos distintos, surfe de cada lado e cópias independentes', async () =>
     assert.equal(await repo.getPlanByCode(code), null);
   left.config.timeLimitMs = 1000;
   assert.equal((await repo.getPlanByCode('QWER'))?.config.timeLimitMs, 6000);
-});
-
-test('resultados isolados por jogador, ordenados e idempotentes', async () => {
-  data.clear();
-  await repo.saveResult(result);
-  await repo.saveResult({
-    ...result,
-    id: '2',
-    patientId: 'outro',
-    plan: { ...result.plan, patientId: 'outro' },
-    completedAt: '2026-03-01T00:00:00.000Z',
-  });
-  await repo.saveResult({
-    ...result,
-    id: '3',
-    completedAt: '2026-02-01T00:00:00.000Z',
-  });
-  await repo.saveResult(result);
-  assert.deepEqual(
-    (await repo.listResults('jogador-demo')).map((item) => item.id),
-    ['3', 'one']
-  );
-  assert.equal((await repo.listResults('outro')).length, 1);
-});
-
-test('histórico corrompido é preservado e gravação inválida é rejeitada', async () => {
-  data.clear();
-  data.set(RESULTS_KEY, '{');
-  await assert.rejects(repo.listResults('jogador-demo'));
-  await assert.rejects(repo.saveResult(result));
-  assert.equal(data.get(RESULTS_KEY), '{');
-  data.clear();
-  await assert.rejects(repo.saveResult({ ...result, hits: -1 }));
 });

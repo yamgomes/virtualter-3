@@ -10,6 +10,7 @@ import {
 export const surfingDefinitions = {
   surfing: {
     label: 'Surfe',
+    report: { movement: 'none', attempts: 'timed' },
     posture: 'side',
     postureLabel: 'De lado',
     fields: [

@@ -11,9 +11,9 @@ import type {
 import {
   KneeCalibration,
   measureLegMovement,
-  readLegPose,
+  observeLegPose,
 } from './legTracking';
-import type { LegMovement } from './legTracking';
+import type { LegMovement, LegPoseIssue } from './legTracking';
 import { LIFT_HEIGHT, LowerBodyGame } from './lowerBodyGame';
 import { LowerBodyScene } from './lowerBodyScene';
 import './style.css';
@@ -27,11 +27,24 @@ const INSTRUCTIONS: Record<LowerBodyGameId, string> = {
     'Dê passos no lugar, alternando os pés, para avançar pela faixa central.',
 };
 
+const framingHelp: Record<LegPoseIssue, string> = {
+  frame: 'Fique de frente e enquadre dos ombros até logo abaixo dos joelhos.',
+  torso: 'Ajuste a câmera para mostrar os dois ombros e os quadris.',
+  leftKnee:
+    'O joelho esquerdo não foi detectado. Ajuste a câmera para enquadrar os dois joelhos.',
+  rightKnee:
+    'O joelho direito não foi detectado. Ajuste a câmera para enquadrar os dois joelhos.',
+  knees:
+    'Os joelhos não foram detectados. Incline a câmera um pouco para baixo ou afaste-se até que apareçam na prévia.',
+  distance:
+    'Aproxime-se um pouco, mantendo os ombros e os dois joelhos no quadro.',
+};
+
 export class LowerBodyActivity implements GameActivity {
   readonly version = '1.0.0';
   readonly posture;
   readonly instructions =
-    'Fique de frente e enquadre dos ombros até os pés. Comece em repouso, com os dois pés no chão. Depois eleve cada joelho, um de cada vez, até a maior altura confortável e abaixe-o.';
+    'Fique de frente e enquadre dos ombros até logo abaixo dos joelhos. Os pés podem ficar fora da imagem. Comece em repouso, com os dois pés no chão. Depois eleve cada joelho, um de cada vez, até a maior altura confortável e abaixe-o.';
   readonly planDescription: string;
   private calibration = new KneeCalibration();
   private movement: LegMovement = { knees: { left: 0, right: 0 }, balance: 1 };
@@ -61,7 +74,7 @@ export class LowerBodyActivity implements GameActivity {
   }
 
   calibrate(frame: PoseFrame | null, now: number): PreparationProgress {
-    const sample = readLegPose(frame);
+    const { sample, issue } = observeLegPose(frame);
     const progress = this.calibration.update(sample, now);
     const { stage, lifted, result } = this.calibration;
     const side = stage === 'left' ? 'esquerdo' : 'direito';
@@ -70,8 +83,8 @@ export class LowerBodyActivity implements GameActivity {
         stage === 'rest'
           ? 'Fique em pé, de frente.'
           : `Calibre o joelho ${side}.`,
-      message: !sample
-        ? 'Enquadre os ombros, os quadris, os joelhos e os tornozelos.'
+      message: issue
+        ? framingHelp[issue]
         : stage === 'rest'
           ? 'Mantenha os dois pés no chão e aguarde.'
           : lifted
@@ -103,16 +116,16 @@ export class LowerBodyActivity implements GameActivity {
       <p><a href="https://sketchfab.com/3d-models/low-poly-footballsoccer-ball-08dc7132f9f742eda7f1f9d36c52219c">Bola</a> de alex.yefremov · <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>. Modelo redimensionado.</p></details>`
           : ''
       }`;
-    this.refresh(null, true);
+    this.refresh(null);
   }
 
   update(frame: PoseFrame | null, now: number) {
-    const sample = readLegPose(frame);
+    const { sample, issue } = observeLegPose(frame);
     const rest = this.calibration.result;
     const movement = sample && rest ? measureLegMovement(sample, rest) : null;
     if (movement) this.movement = movement;
     this.game.update(movement, now);
-    this.refresh(movement);
+    this.refresh(movement, issue);
     return {
       tracking: movement !== null,
       completed: this.game.completed,
@@ -120,7 +133,7 @@ export class LowerBodyActivity implements GameActivity {
     };
   }
 
-  private refresh(movement: LegMovement | null, starting = false): void {
+  private refresh(movement: LegMovement | null, issue?: LegPoseIssue): void {
     if (!this.panel) return;
     const { mode, hits, remainingMs, ball, plannedAttempts } = this.game;
     const time = `${Math.ceil(remainingMs / 1000)} s restantes`;
@@ -146,8 +159,8 @@ export class LowerBodyActivity implements GameActivity {
         value === undefined ? '—' : `${Math.round(value * 100)}%`;
     }
     let message = '';
-    if (!movement && !starting) {
-      message = 'Rastreamento pausado. Enquadre o corpo dos ombros aos pés.';
+    if (issue) {
+      message = `Rastreamento pausado. ${framingHelp[issue]}`;
     } else if (ball) {
       const side = ball.side === 'left' ? 'esquerdo' : 'direito';
       message =

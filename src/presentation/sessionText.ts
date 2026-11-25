@@ -27,23 +27,12 @@ export function planMetricsText(metrics?: readonly Metric[]): string {
           'pt-BR'
         )
   );
-  return ` Métricas: ${labels.join(', ')}.`;
-}
-
-export function sessionHistoryDetail(result: SessionResult): string {
-  const { summary } = gamePlans[result.plan.gameId];
-  const activity =
-    summary?.history?.(result) ??
-    `${result.hits}/${result.plannedAttempts} ${hitLabel}`;
-  const date = new Date(result.completedAt).toLocaleString('pt-BR');
-  const status =
-    result.endReason === 'completed' ? 'concluída' : 'interrompida';
-  return `${date} · ${activity} · ${status}`;
+  return labels.join(', ');
 }
 
 export function sessionSummary(result: SessionResult): {
   title: string;
-  details: string;
+  details: string[];
 } {
   const { gameId, metrics } = result.plan;
   const { summary } = gamePlans[gameId];
@@ -73,6 +62,6 @@ export function sessionSummary(result: SessionResult): {
     );
   return {
     title: summaryTitles[result.endReason],
-    details: details.join(' · '),
+    details,
   };
 }

@@ -54,41 +54,110 @@ test('fila sobrevive a recarga, reenvia com o mesmo ID e isola jogadores', async
     setItem: (k: string, v: string) => {
       data.set(k, v);
     },
+    removeItem: (k: string) => {
+      data.delete(k);
+    },
   };
   const outbox = new ResultOutbox(storage);
-  outbox.enqueue(result);
   const other = {
     ...result,
     id: 'other',
     patientId: 'other',
     plan: { ...result.plan, patientId: 'other' },
   };
-  outbox.enqueue(other);
   const saved: string[] = [];
   const repository = {
     async getPlanByCode() {
       return null;
     },
-    async listResults() {
-      return [];
-    },
     async saveResult(r: typeof result) {
       saved.push(r.id);
-      if (saved.length === 1) throw new Error('offline');
+      if (saved.length <= 2) throw new Error('offline');
     },
   };
-  await assert.rejects(outbox.flush(repository, result.patientId));
+  await outbox.send(repository, result);
+  await outbox.send(repository, other);
   const reloaded = new ResultOutbox(storage);
   assert.equal(reloaded.count(result.patientId), 1);
   await Promise.all([
     reloaded.flush(repository, result.patientId),
     reloaded.flush(repository, result.patientId),
   ]);
-  assert.deepEqual(saved, ['one', 'one']);
+  assert.deepEqual(saved, ['one', 'other', 'one']);
   assert.equal(reloaded.count('other'), 1);
   assert.equal(reloaded.count(result.patientId), 0);
+  await reloaded.flush(repository, 'other');
+  assert.equal(data.has(OUTBOX_KEY), false);
+});
+test('aguarda a resposta do servidor sem gravar e mantém o armazenamento intacto no sucesso', async () => {
+  let writes = 0;
+  const outbox = new ResultOutbox({
+    getItem: () => null,
+    setItem: () => {
+      writes++;
+    },
+    removeItem: () => {
+      writes++;
+    },
+  });
+  let resolve!: () => void;
+  const response = new Promise<void>((done) => {
+    resolve = done;
+  });
+  const pending = outbox.send(
+    {
+      async getPlanByCode() {
+        return null;
+      },
+      saveResult: () => response,
+    },
+    result
+  );
+  assert.equal(writes, 0);
+  assert.equal(outbox.has(result.id), false);
+  resolve();
+  await pending;
+  assert.equal(writes, 0);
+});
+test('salva um envio interrompido ao sair da página e remove após confirmação', async () => {
+  const data = new Map<string, string>();
+  const outbox = new ResultOutbox({
+    getItem: (key) => data.get(key) ?? null,
+    setItem: (key, value) => {
+      data.set(key, value);
+    },
+    removeItem: (key) => {
+      data.delete(key);
+    },
+  });
+  let resolve!: () => void;
+  const response = new Promise<void>((done) => {
+    resolve = done;
+  });
+  const pending = outbox.send(
+    {
+      async getPlanByCode() {
+        return null;
+      },
+      saveResult: () => response,
+    },
+    result
+  );
+  outbox.preserveUnconfirmed();
+  assert.equal(JSON.parse(data.get(OUTBOX_KEY)!)[0].id, result.id);
+  resolve();
+  await pending;
+  assert.equal(data.size, 0);
 });
 test('falha do armazenamento mantém resultado na memória e corrupção não é sobrescrita', async () => {
+  const repository = {
+    async getPlanByCode() {
+      return null;
+    },
+    async saveResult() {
+      throw new Error('offline');
+    },
+  };
   const outbox = new ResultOutbox({
     getItem() {
       return null;
@@ -96,8 +165,9 @@ test('falha do armazenamento mantém resultado na memória e corrupção não é
     setItem() {
       throw new Error('quota');
     },
+    removeItem() {},
   });
-  outbox.enqueue(result);
+  await outbox.send(repository, result);
   assert.equal(outbox.durable, false);
   assert.equal(outbox.count(result.patientId), 1);
   let raw = '{';
@@ -109,8 +179,11 @@ test('falha do armazenamento mantém resultado na memória e corrupção não é
     setItem(_k, value) {
       raw = value;
     },
+    removeItem() {
+      raw = '';
+    },
   });
-  corrupt.enqueue(result);
+  await corrupt.send(repository, result);
   assert.equal(raw, '{');
   assert.equal(corrupt.durable, false);
 });

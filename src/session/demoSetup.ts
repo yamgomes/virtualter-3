@@ -85,7 +85,7 @@ export class DemoSetup {
       <p>${definition.help ?? 'Ajuste os parâmetros e respeite seu alcance confortável.'}</p>
       <div class="demo-fields">${definition.fields.map((field) => this.field(field)).join('')}</div>
       <p role="alert"></p><button type="submit">Usar esta configuração <span>→</span></button>
-      <p class="fine">Os resultados desta demonstração ficam neste dispositivo.</p></form>`;
+      <p class="fine">O resultado da demonstração aparece no fim da partida.</p></form>`;
   }
 
   private field(field: TherapyField): string {

@@ -68,7 +68,7 @@ export interface GameDefinition {
   requiresSets?: boolean;
   independentHold?: boolean;
   report?: {
-    movement: 'shoulderRepetitions' | 'lowerBody';
+    movement: 'shoulderRepetitions' | 'lowerBody' | 'none';
     attempts: 'timed' | 'fixed' | 'sets' | 'hitsOnly' | 'unscored';
   };
   historyScore?: (result: SessionReport) => string;

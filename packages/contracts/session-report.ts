@@ -26,7 +26,7 @@ export interface SessionReport {
   hits: number;
   misses: number;
   points: number;
-  movement: MovementMetrics;
+  movement: MovementMetrics | null;
 }
 
 export function validMovementMetrics(value: unknown): value is MovementMetrics {

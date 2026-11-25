@@ -134,7 +134,12 @@ try {
     points: 0,
     movement: { lowerBody: { ...lowerBody, balance: null } },
   });
+  const surfing = await record('surfing', 'Surfe', 'JJJJJJ', 8, {
+    movement: null,
+  });
   const invalid = doc(results(player), id(7));
+  await assertFails(setDoc(invalid, { ...surfing, movement: base.movement }));
+  await assertFails(setDoc(invalid, { ...goalie, movement: null }));
   await assertFails(setDoc(invalid, { ...juggling, movement: base.movement }));
   await assertFails(
     setDoc(invalid, {
@@ -168,7 +173,7 @@ try {
   const history = await assertSucceeds(
     getDocs(query(results(owner), orderBy('completedAtMs', 'desc'), limit(100)))
   );
-  assert.equal(history.size, 5);
+  assert.equal(history.size, 6);
   assert.deepEqual(
     history.docs.find((doc) => doc.id === id(2)).data().movement
       .shoulderRepetitions,
