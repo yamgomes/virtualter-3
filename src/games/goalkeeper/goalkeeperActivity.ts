@@ -2,10 +2,15 @@ import type { Intensity } from '@homephysio/contracts';
 import { GAME_DEFINITIONS } from '@homephysio/contracts';
 import type { ShoulderAngles } from '../../exercise/automaticCalibration';
 import { ShoulderInput } from '../../exercise/shoulderInput';
-import type { GameResult, GoalkeeperConfig } from '../../session/types';
+import type { GameResult } from '../../session/types';
 import type { PoseFrame } from '../../tracking/types';
-import type { GameActivity, PreparationProgress } from '../contracts';
+import type {
+  ActivityFactory,
+  GameActivity,
+  PreparationProgress,
+} from '../contracts';
 import { GoalkeeperGame } from './goalkeeperGame';
+import type { GoalkeeperConfig } from './goalkeeperPlan';
 import { GoalkeeperScene } from './goalkeeperScene';
 import './style.css';
 
@@ -18,9 +23,6 @@ export class GoalkeeperActivity implements GameActivity {
   private readonly config: GoalkeeperConfig;
   private readonly intensity?: Intensity;
   private readonly input = new ShoulderInput();
-  get shoulderMeasurementRange() {
-    return this.input.measuredRange;
-  }
   private game: GoalkeeperGame | null = null;
   private scene: GoalkeeperScene | null = null;
   private panel: HTMLElement | null = null;
@@ -76,6 +78,7 @@ export class GoalkeeperActivity implements GameActivity {
         <p><a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>. Modelos redimensionados e luva espelhada na cena.</p>
       </details>`;
     this.refresh();
+    this.input.startMeasurement();
   }
 
   update(frame: PoseFrame | null, now: number) {
@@ -87,6 +90,7 @@ export class GoalkeeperActivity implements GameActivity {
     return {
       tracking: angles !== null,
       completed: this.game?.completed ?? false,
+      hits: this.game?.hits,
     };
   }
 
@@ -119,6 +123,7 @@ export class GoalkeeperActivity implements GameActivity {
       points: hits * (this.config.pointsPerHit ?? 10),
       plannedAttempts: this.config.repetitions,
       attempts: [...attempts],
+      movement: this.input.movement,
       calibration: {
         leftRest: range.left.rest,
         leftMaximum: range.left.maximum,
@@ -136,3 +141,8 @@ export class GoalkeeperActivity implements GameActivity {
     this.panel = null;
   }
 }
+
+export const createGoalkeeper: ActivityFactory<'goalkeeper'> = ({
+  config,
+  intensity,
+}) => new GoalkeeperActivity(config, intensity);

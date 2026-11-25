@@ -9,6 +9,7 @@
     "database": "(default)",
     "location": "southamerica-east1",
     "rules": "firestore.rules",
+    "predeploy": "npm run rules:generate",
     "indexes": "firestore.indexes.json"
   }
 }

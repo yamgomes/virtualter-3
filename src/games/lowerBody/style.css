@@ -1,0 +1,30 @@
+.lower-body-stage video,
+.lower-body-stage .camera-label {
+  visibility: hidden;
+}
+
+.video-wrap canvas.lower-body-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+#game-ui [data-leg$='-value'] {
+  float: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#game-ui [data-leg='score'] {
+  font-weight: 700;
+}
+
+.lower-body-credits {
+  color: #b7cce6;
+  font-size: 0.85rem;
+}
+
+.lower-body-credits a {
+  color: #b8e9ff;
+}

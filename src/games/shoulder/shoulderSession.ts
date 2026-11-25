@@ -2,7 +2,8 @@ import type {
   BilateralCalibration,
   ShoulderAngles,
 } from '../../exercise/automaticCalibration';
-import type { GameResult, ShoulderConfig } from '../../session/types';
+import type { GameResult } from '../../session/types';
+import type { ShoulderConfig } from './shoulderPlans';
 import { ShoulderGame } from './shoulderGame';
 import type { ShoulderSceneState } from './shoulderScene';
 import { ShoulderScene } from './shoulderScene';

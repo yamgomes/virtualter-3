@@ -1,8 +1,13 @@
-import type { GameActivity, PreparationProgress } from '../contracts';
+import type {
+  ActivityFactory,
+  GameActivity,
+  PreparationProgress,
+} from '../contracts';
 import { ShoulderInput } from '../../exercise/shoulderInput';
 import { normalizeShoulder } from '../../exercise/shoulderMotion';
 import type { PoseFrame } from '../../tracking/types';
-import type { GameResult, ShoulderElevationConfig } from '../../session/types';
+import type { GameResult } from '../../session/types';
+import type { ShoulderElevationConfig } from './shoulderPlans';
 
 type Stage = 'raise' | 'hold' | 'lower' | 'rest' | 'done';
 
@@ -32,10 +37,6 @@ export class ShoulderElevationActivity implements GameActivity {
     this.planDescription = `${config.sets} séries de ${config.repetitions} repetições · manter no alto por ${config.holdMs / 1000} s · descanso de ${config.restMs / 1000} s.`;
   }
 
-  get shoulderMeasurementRange() {
-    return this.input.measuredRange;
-  }
-
   calibrate(frame: PoseFrame | null, now: number): PreparationProgress {
     const progress = this.input.calibrate(frame, now);
     return {
@@ -63,10 +64,12 @@ export class ShoulderElevationActivity implements GameActivity {
       <div class="progress-label"><span data-field="phase"></span><strong data-field="timer"></strong></div>
       <progress data-field="progress" max="1" value="0" aria-label="Progresso do movimento"></progress>`;
     this.refresh(0);
+    this.input.startMeasurement();
   }
 
   update(frame: PoseFrame | null, now: number) {
     this.currentNow = now;
+    const angles = this.input.read(frame);
     if (!frame) {
       if (this.lostAt === null) this.lostAt = now;
       this.holdStarted = null;
@@ -77,7 +80,6 @@ export class ShoulderElevationActivity implements GameActivity {
       if (this.stage === 'rest') this.restStarted += now - this.lostAt;
       this.lostAt = null;
     }
-    const angles = this.input.read(frame);
     if (!angles) return { tracking: false, completed: false };
     const range = this.input.calibration!;
     const elevated =
@@ -143,7 +145,11 @@ export class ShoulderElevationActivity implements GameActivity {
     }
     if (this.stage === 'raise' && lowered) this.armed = true;
     this.refresh(now);
-    return { tracking: true, completed: this.stage === 'done' };
+    return {
+      tracking: true,
+      completed: this.stage === 'done',
+      hits: this.attempts.length,
+    };
   }
 
   render(_now: number): void {
@@ -159,6 +165,7 @@ export class ShoulderElevationActivity implements GameActivity {
       points: hits * (this.config.pointsPerHit ?? 10),
       plannedAttempts: this.config.repetitions * this.config.sets,
       attempts: this.attempts,
+      movement: this.input.movement,
       calibration: {
         leftRest: calibration.left.rest,
         leftMaximum: calibration.left.maximum,
@@ -209,3 +216,7 @@ export class ShoulderElevationActivity implements GameActivity {
     }
   }
 }
+
+export const createShoulderElevation: ActivityFactory<'shoulderElevation'> = ({
+  config,
+}) => new ShoulderElevationActivity(config);

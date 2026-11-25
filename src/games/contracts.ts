@@ -1,7 +1,7 @@
+import type { GameId } from '@homephysio/contracts';
 import type { PoseFrame } from '../tracking/types';
 import type { GameResult, SessionPlan } from '../session/types';
 import type { PostureRequirement } from '../tracking/posture';
-import type { BilateralCalibration } from '../exercise/automaticCalibration';
 export interface PreparationProgress {
   title: string;
   message: string;
@@ -15,16 +15,17 @@ export interface GameActivity {
   readonly planDescription: string;
   /** Declarada pelo jogo; omitir quando não houver orientação obrigatória. */
   readonly posture?: PostureRequirement;
-  readonly shoulderMeasurementRange?: BilateralCalibration;
   calibrate(frame: PoseFrame | null, now: number): PreparationProgress;
   resetCalibration(): void;
   start(stage: HTMLElement, panel: HTMLElement): void;
   update(
     frame: PoseFrame | null,
     now: number
-  ): { tracking: boolean; completed: boolean };
+  ): { tracking: boolean; completed: boolean; hits?: number };
   render(now: number): void;
   result(): GameResult;
   dispose(): void;
 }
-export type ActivityFactory = (plan: SessionPlan) => GameActivity;
+export type ActivityFactory<Id extends GameId = GameId> = (
+  plan: SessionPlan<Id>
+) => GameActivity;

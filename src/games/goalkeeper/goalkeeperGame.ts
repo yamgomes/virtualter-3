@@ -3,7 +3,8 @@ import type {
   ShoulderAngles,
 } from '../../exercise/automaticCalibration';
 import type { Side } from '../../exercise/shoulderMotion';
-import type { AttemptResult, GoalkeeperConfig } from '../../session/types';
+import type { AttemptResult } from '../../session/types';
+import type { GoalkeeperConfig } from './goalkeeperPlan';
 import type { Intensity } from '@homephysio/contracts';
 
 export interface Shot {

@@ -86,7 +86,9 @@ function setup(withPosture = false) {
   const media = { getUserMedia: async () => stream };
   for (const [key, value] of Object.entries({
     document: documentStub,
-    window: new ElementStub(),
+    window: Object.assign(new ElementStub(), {
+      location: { href: 'http://localhost/' },
+    }),
     navigator: { mediaDevices: media },
     performance: { now: () => now },
     requestAnimationFrame: (cb: FrameRequestCallback) => {

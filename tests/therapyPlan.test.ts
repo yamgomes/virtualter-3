@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   defaultTherapy,
+  GAME_DEFINITIONS,
+  isGameId,
   intensityPreset,
   validTherapy,
 } from '@homephysio/contracts';
@@ -9,10 +11,18 @@ import { therapyPlan } from '../src/session/therapyPlan';
 import { isSessionPlan } from '../src/session/types';
 
 test('os padrões e intensidades do catálogo podem ser salvos e lidos pelo jogador', () => {
-  for (const gameId of ['shoulder', 'surfing', 'goalkeeper'] as const) {
+  for (const gameId of Object.keys(GAME_DEFINITIONS).filter(isGameId)) {
     const defaults = defaultTherapy(gameId);
     assert.equal(validTherapy(defaults), true, gameId);
-    for (const intensity of ['low', 'moderate', 'high'] as const) {
+    assert.equal(
+      isSessionPlan(therapyPlan('paciente-teste', 1, defaults)),
+      true,
+      gameId
+    );
+    for (const { value: intensity } of GAME_DEFINITIONS[gameId].fields.find(
+      (field) => field.kind === 'select' && field.key === 'intensity'
+    )?.options ?? []) {
+      if (intensity === 'custom') continue;
       const therapy = { ...defaults, ...intensityPreset(intensity, gameId) };
       assert.equal(validTherapy(therapy), true, `${gameId}/${intensity}`);
       assert.equal(

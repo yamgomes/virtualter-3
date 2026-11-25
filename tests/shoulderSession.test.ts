@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { ShoulderSession } from '../src/games/shoulder/shoulderSession';
 import type { ShoulderSceneState } from '../src/games/shoulder/shoulderScene';
-import type { ShoulderConfig } from '../src/session/types';
+import type { ShoulderConfig } from '../src/games/shoulder/shoulderPlans';
 
 class FakeElement {
   innerHTML = '';

@@ -7,6 +7,7 @@ import {
 } from 'firebase/firestore';
 import {
   FIREBASE_CONFIG,
+  GAME_DEFINITIONS,
   normalizeCode,
   validIssuedCode,
   validTherapy,
@@ -88,20 +89,14 @@ export class FirebaseSessionRepository implements SessionRepository {
   publishesResults(plan: SessionPlan): boolean {
     return (
       plan.patientId !== 'jogador-demo' &&
-      (plan.gameId === 'shoulder' ||
-        plan.gameId === 'shoulderElevation' ||
-        plan.gameId === 'goalkeeper')
+      !!GAME_DEFINITIONS[plan.gameId].report
     );
   }
 
   async saveResult(result: SessionResult): Promise<void> {
     const { gameId, version, title } = result.plan;
     const { movement } = result;
-    if (
-      !movement ||
-      !this.publishesResults(result.plan) ||
-      gameId === 'surfing'
-    ) {
+    if (!movement || !this.publishesResults(result.plan)) {
       await this.local.saveResult(result);
       return;
     }

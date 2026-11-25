@@ -1,5 +1,5 @@
 import { TargetChallenge } from '../targetChallenge';
-import type { SurfConfig } from '../../session/types';
+import type { SurfConfig } from './surfPlan';
 export class SurfGame extends TargetChallenge<number> {
   constructor(config: SurfConfig) {
     super(

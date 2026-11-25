@@ -1,6 +1,10 @@
-import { ShoulderRepetitionCounter } from './exercise/shoulderRepetitions';
 import type { ActivityFactory, GameActivity } from './games/contracts';
 import { PoseOverlay } from './presentation/poseOverlay';
+import {
+  planMetricsText,
+  sessionHistoryDetail,
+  sessionSummary,
+} from './presentation/sessionText';
 import { DemoSetup } from './session/demoSetup';
 import { ResultOutbox } from './session/resultOutbox';
 import { SessionClock } from './session/sessionClock';
@@ -52,7 +56,6 @@ export class GameController {
   private activity: GameActivity | null = null;
   private plan: SessionPlan | null = null;
   private clock: SessionClock | null = null;
-  private shoulderRepetitions: ShoulderRepetitionCounter | null = null;
   private sessionId = '';
   private tracking = false;
   private detector: PoseSource;
@@ -157,7 +160,7 @@ export class GameController {
           this.activity.instructions;
         try {
           this.audio ??= new AudioContext();
-          void this.audio.resume();
+          void this.audio.resume().catch(() => {});
         } catch {
           /* Som é opcional. */
         }
@@ -257,7 +260,10 @@ export class GameController {
       },
       options
     );
-    window.addEventListener('beforeunload', () => this.dispose(), options);
+    window.addEventListener('beforeunload', () => {
+      // O navegador libera o contexto de áudio ao encerrar o documento.
+      this.dispose(false);
+    }, options);
   }
   private async loadPlan(code: string, demoPlan?: SessionPlan): Promise<void> {
     if (!['welcome', 'loading'].includes(this.phase)) return;
@@ -288,18 +294,8 @@ export class GameController {
         plan.patientId === 'jogador-demo'
           ? 'Escolher outro jogo ou ajustar parâmetros'
           : 'Usar outro código';
-      this.el('plan-description').textContent = this.activity.planDescription;
-      if (plan.metrics?.length) {
-        const labels = {
-          hits: 'acertos',
-          misses: 'alvos não alcançados',
-          points: 'pontuação',
-          activeMs: 'tempo ativo',
-          pausedMs: 'tempo em pausa',
-        };
-        this.el('plan-description').textContent +=
-          ` Métricas: ${plan.metrics.map((m) => labels[m]).join(', ')}.`;
-      }
+      this.el('plan-description').textContent =
+        this.activity.planDescription + planMetricsText(plan.metrics);
       const posture = this.activity.posture;
       this.el('expected-posture').textContent = posture
         ? {
@@ -345,9 +341,7 @@ export class GameController {
           title = document.createElement('strong'),
           detail = document.createElement('span');
         title.textContent = result.plan.title;
-        const scored =
-          result.plan.gameId === 'goalkeeper' ? 'defesas' : 'acertos';
-        detail.textContent = `${new Date(result.completedAt).toLocaleString('pt-BR')} · ${result.hits}/${result.plannedAttempts} ${scored} · ${result.endReason === 'completed' ? 'concluída' : 'interrompida'}`;
+        detail.textContent = sessionHistoryDetail(result);
         row.append(title, detail);
         list.append(row);
       }
@@ -563,14 +557,14 @@ export class GameController {
               this.showCalibration(progress);
               if (progress.complete) this.startGame();
             } else if (this.phase === 'playing') {
-              this.shoulderRepetitions?.update(frame);
               const status = this.activity!.update(
                 frame,
                 frame?.timestamp ?? now
               );
-              const hits = this.activity!.result().hits;
-              if (hits > this.lastHits) this.playPointSound();
-              this.lastHits = hits;
+              if (status.hits !== undefined) {
+                if (status.hits > this.lastHits) this.playPointSound();
+                this.lastHits = status.hits;
+              }
               if (status.tracking && !this.tracking) this.message('');
               this.tracking = status.tracking;
               this.clock?.tick(now, this.tracking);
@@ -601,10 +595,6 @@ export class GameController {
     if (!this.plan || !this.activity) return;
     try {
       this.activity.start(this.el('camera-preview'), this.el('game-ui'));
-      const range = this.activity.shoulderMeasurementRange;
-      this.shoulderRepetitions = range
-        ? new ShoulderRepetitionCounter(range)
-        : null;
       this.sessionId = crypto.randomUUID();
       this.lastHits = 0;
       this.clock = new SessionClock(performance.now());
@@ -673,7 +663,6 @@ export class GameController {
     if (this.phase === 'playing' && this.tracking && !this.poses.read(now)) {
       this.tracking = false;
       this.activity?.update(null, now);
-      this.shoulderRepetitions?.update(null);
       if (this.postureMonitor) {
         const posture = this.postureMonitor.update(null, now);
         this.el('posture-status').textContent = posture.message;
@@ -752,7 +741,6 @@ export class GameController {
     const now = performance.now();
     this.clock?.tick(now, false);
     this.activity?.update(null, now);
-    this.shoulderRepetitions?.update(null);
     this.tracking = false;
     this.postureMonitor?.reset();
     this.phase = 'paused';
@@ -771,7 +759,6 @@ export class GameController {
       performance.now(),
       this.phase === 'playing' && this.tracking
     );
-    const repetitions = this.shoulderRepetitions?.result();
     const result: SessionResult = {
       ...this.activity.result(),
       ...this.clock.snapshot(),
@@ -782,41 +769,14 @@ export class GameController {
       gameVersion: this.activity.version,
       completedAt: new Date().toISOString(),
       endReason,
-      ...(repetitions && { movement: { shoulderRepetitions: repetitions } }),
     };
     this.lastResult = result;
     this.outbox.enqueue(result);
-    this.el('summary-title').textContent =
-      endReason === 'completed'
-        ? 'Você concluiu sua sessão.'
-        : endReason === 'error'
-          ? 'A sessão encontrou um erro.'
-          : 'Sessão encerrada por você.';
-    const goalkeeper = result.plan.gameId === 'goalkeeper';
-    const shoulderElevation = result.plan.gameId === 'shoulderElevation';
-    const summaries = {
-      hits: goalkeeper
-        ? `${result.hits} defesas em ${result.attempts.length} chutes`
-        : shoulderElevation
-          ? `${result.hits} de ${result.plannedAttempts} repetições concluídas`
-          : `${result.hits} acertos (meta mínima: ${result.plannedAttempts})`,
-      misses: `${result.misses} ${goalkeeper ? 'gols sofridos' : shoulderElevation ? 'repetições não concluídas' : 'alvos não alcançados'}`,
-      points: `${result.points} pontos`,
-      activeMs: `Tempo ativo: ${Math.round(result.activeMs / 1000)} s`,
-      pausedMs: `Pausas: ${Math.round(result.pausedMs / 1000)} s`,
-    };
-    const details = (
-      result.plan.metrics ??
-      (['hits', 'misses', 'points', 'activeMs', 'pausedMs'] as const)
-    ).map((metric) => summaries[metric]);
-    if (repetitions)
-      details.push(
-        `Elevações: ${repetitions.left} à esquerda, ${repetitions.right} à direita`
-      );
-    this.el('summary-text').textContent = details.join(' · ');
+    const summary = sessionSummary(result);
+    this.el('summary-title').textContent = summary.title;
+    this.el('summary-text').textContent = summary.details;
     this.phase = 'summary';
     this.clock = null;
-    this.shoulderRepetitions = null;
     this.stopCamera();
     this.activity.dispose();
     this.activity = null;
@@ -916,7 +876,7 @@ export class GameController {
       this.phase === 'loading';
     this.el<HTMLButtonElement>('try-demo').disabled = this.phase === 'loading';
   }
-  dispose(): void {
+  dispose(closeAudio = true): void {
     if (this.disposed) return;
     this.disposed = true;
     this.planGeneration++;
@@ -926,7 +886,8 @@ export class GameController {
     this.activity?.dispose();
     this.activity = null;
     this.detector.dispose();
-    if (this.audio) void this.audio.close();
+    if (closeAudio && this.audio && this.audio.state !== 'closed')
+      void this.audio.close().catch(() => {});
     this.overlay.dispose();
   }
 }

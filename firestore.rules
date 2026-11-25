@@ -16,18 +16,34 @@ service cloud.firestore {
     function issuedCode(value) { return value.matches('^[2-9A-HJ-NP-Z]{6}$'); }
     function bounded(value, min, max) { return value is number && value >= min && value <= max; }
     function label(value) { return value is string && value.size() > 0 && value.size() <= 120; }
+    // BEGIN GENERATED GAME CATALOG
+    function gameCatalog() {
+      return {
+        "kneeRaise": {"metrics":["hits","misses","points","activeMs","pausedMs","kneeHeight","balance"],"targetsPattern":"^$","independentHold":false,"requiresSets":false,"report":{"movement":"lowerBody","attempts":"hitsOnly"}},
+        "kneeJuggle": {"metrics":["hits","misses","points","activeMs","pausedMs","kneeHeight","balance"],"targetsPattern":"^$","independentHold":false,"requiresSets":false,"report":{"movement":"lowerBody","attempts":"fixed"}},
+        "walking": {"metrics":["activeMs","pausedMs","kneeHeight","balance"],"targetsPattern":"^$","independentHold":false,"requiresSets":false,"report":{"movement":"lowerBody","attempts":"unscored"}},
+        "shoulder": {"metrics":["hits","misses","points","activeMs","pausedMs"],"targetsPattern":"^(100|[0-9]{1,2}(\\.[0-9]{1,2})?)/(100|[0-9]{1,2}(\\.[0-9]{1,2})?)(,(100|[0-9]{1,2}(\\.[0-9]{1,2})?)/(100|[0-9]{1,2}(\\.[0-9]{1,2})?))*$","independentHold":false,"requiresSets":false,"report":{"movement":"shoulderRepetitions","attempts":"timed"}},
+        "shoulderElevation": {"metrics":["hits","misses","points","activeMs","pausedMs"],"targetsPattern":"^$","independentHold":true,"requiresSets":true,"report":{"movement":"shoulderRepetitions","attempts":"sets"}},
+        "surfing": {"metrics":["hits","misses","points","activeMs","pausedMs"],"targetsPattern":"^(100|[0-9]{1,2}(\\.[0-9]{1,2})?)(,(100|[0-9]{1,2}(\\.[0-9]{1,2})?))*$","independentHold":false,"requiresSets":false,"report":null},
+        "goalkeeper": {"metrics":["hits","misses","points","activeMs","pausedMs"],"targetsPattern":"^$","independentHold":false,"requiresSets":false,"report":{"movement":"shoulderRepetitions","attempts":"fixed"}}
+      };
+    }
+    // END GENERATED GAME CATALOG
+    function validMetrics(m, allowed) {
+      return m is list && m.size() >= 1 && m.size() <= allowed.size()
+        && m.toSet().size() == m.size() && m.hasOnly(allowed);
+    }
     function therapy(t) {
-      let n = '(100|[0-9]{1,2}([.][0-9]{1,2})?)';
+      let game = gameCatalog().get(t.get('gameId', ''), null);
       return t is map && t.keys().hasOnly(['gameId','title','intensity','metrics','targets','durationSeconds','repetitions','holdSeconds','targetSeconds','tolerancePercent','postureTolerancePercent','pointsPerHit','side','sets','restSeconds'])
-        && label(t.title) && t.gameId in ['shoulder','surfing','goalkeeper','shoulderElevation'] && t.side in ['left','right']
-        && t.intensity in ['low','moderate','high','custom'] && t.metrics is list && t.metrics.size() >= 1 && t.metrics.size() <= 5
-        && t.metrics.hasOnly(['hits','misses','points','activeMs','pausedMs']) && t.metrics.toSet().size() == t.metrics.size()
+        && game != null && label(t.title) && t.side in ['left','right']
+        && t.intensity in ['low','moderate','high','custom'] && validMetrics(t.metrics, game.metrics)
         && t.targets is string && t.targets.size() <= 500
-        && (t.gameId in ['goalkeeper','shoulderElevation'] ? t.targets == '' : (t.gameId == 'shoulder' ? t.targets.matches('^'+n+'/'+n+'(,'+n+'/'+n+')*$') : t.targets.matches('^'+n+'(,'+n+')*$')))
+        && t.targets.matches(game.targetsPattern)
         && bounded(t.durationSeconds,1,3600) && t.repetitions is int && bounded(t.repetitions,1,1000)
-        && bounded(t.targetSeconds,0.1,3600) && bounded(t.holdSeconds,0,t.gameId == 'shoulderElevation' ? 3600 : t.targetSeconds)
+        && bounded(t.targetSeconds,0.1,3600) && bounded(t.holdSeconds,0,game.independentHold ? 3600 : t.targetSeconds)
         && t.get('sets',1) is int && bounded(t.get('sets',1),1,100) && bounded(t.get('restSeconds',0),0,3600)
-        && (t.gameId != 'shoulderElevation' || t.keys().hasAll(['sets','restSeconds']))
+        && (!game.requiresSets || t.keys().hasAll(['sets','restSeconds']))
         && bounded(t.tolerancePercent,1,50) && bounded(t.postureTolerancePercent,0,100)
         && t.pointsPerHit is int && bounded(t.pointsPerHit,0,1000);
     }
@@ -40,17 +56,42 @@ service cloud.firestore {
       return a.ownerId == professional && a.patientId == id && a.therapy == d.therapy && a.revision == d.revision;
     }
     function resultCount(value, max) { return value is int && bounded(value, 0, max); }
+    function validMovement(m, kind) {
+      return m is map && (kind == 'lowerBody'
+        ? m.keys().hasOnly(['lowerBody']) && m.lowerBody is map
+          && m.lowerBody.keys().hasOnly(['kneeHeight','balance'])
+          && m.lowerBody.kneeHeight is map
+          && m.lowerBody.kneeHeight.keys().hasOnly(['left','right'])
+          && resultCount(m.lowerBody.kneeHeight.left, 100)
+          && resultCount(m.lowerBody.kneeHeight.right, 100)
+          && (m.lowerBody.balance == null || resultCount(m.lowerBody.balance, 100))
+        : kind == 'shoulderRepetitions' && m.keys().hasOnly(['shoulderRepetitions'])
+          && m.shoulderRepetitions is map && m.shoulderRepetitions.keys().hasOnly(['left','right'])
+          && resultCount(m.shoulderRepetitions.left, 100000)
+          && resultCount(m.shoulderRepetitions.right, 100000));
+    }
     function validSessionReport(d) {
+      let game = gameCatalog().get(d.get('gameId', ''), {});
+      let profile = game.get('report', null);
       return d.keys().hasOnly(['schemaVersion','gameId','title','revision','completedAtMs','activeMs','pausedMs','endReason','hits','misses','points','movement','accessCode'])
-        && d.schemaVersion == 1 && d.gameId in ['shoulder','goalkeeper','shoulderElevation'] && label(d.title)
+        && d.schemaVersion == 1 && profile != null && label(d.title)
         && d.revision is int && d.revision >= 1 && d.accessCode is string && issuedCode(d.accessCode)
         && d.completedAtMs is int && bounded(d.completedAtMs, 1, request.time.toMillis() + 300000)
         && resultCount(d.activeMs, 604800000) && resultCount(d.pausedMs, 604800000)
         && d.endReason in ['completed','stopped','error']
-        && resultCount(d.hits, d.gameId == 'shoulderElevation' ? 100000 : 10000) && resultCount(d.misses, 10000) && resultCount(d.points, d.gameId == 'shoulderElevation' ? 100000000 : 10000000)
-        && d.movement is map && d.movement.keys().hasOnly(['shoulderRepetitions'])
-        && d.movement.shoulderRepetitions is map && d.movement.shoulderRepetitions.keys().hasOnly(['left','right'])
-        && resultCount(d.movement.shoulderRepetitions.left, 100000) && resultCount(d.movement.shoulderRepetitions.right, 100000);
+        && resultCount(d.hits, profile.attempts == 'sets' ? 100000 : 10000) && resultCount(d.misses, 10000) && resultCount(d.points, profile.attempts == 'sets' ? 100000000 : 10000000)
+        && validMovement(d.movement, profile.movement);
+    }
+    function validResultAttempts(d, therapy, policy) {
+      return policy == 'fixed'
+        ? d.hits + d.misses <= therapy.repetitions
+          && (d.endReason != 'completed' || d.hits + d.misses == therapy.repetitions)
+        : policy == 'sets'
+          ? d.misses == 0 && d.hits <= therapy.repetitions * therapy.sets
+            && (d.endReason != 'completed' || d.hits == therapy.repetitions * therapy.sets)
+          : policy == 'unscored' ? d.hits == 0 && d.misses == 0
+            : policy == 'hitsOnly' ? d.misses == 0
+              : policy == 'timed' && d.hits + d.misses <= 10000;
     }
     function matchesResultAccess(d, professional, id) {
       let access = get(/databases/$(database)/documents/patientAccess/$(d.accessCode)).data;
@@ -58,13 +99,7 @@ service cloud.firestore {
         && access.ownerId == professional && access.patientId == id
         && access.revision == d.revision && access.therapy.gameId == d.gameId && access.therapy.title == d.title
         && d.points == d.hits * access.therapy.pointsPerHit
-        && (d.gameId == 'goalkeeper'
-          ? d.hits + d.misses <= access.therapy.repetitions
-            && (d.endReason != 'completed' || d.hits + d.misses == access.therapy.repetitions)
-          : d.gameId == 'shoulderElevation'
-            ? d.misses == 0 && d.hits <= access.therapy.repetitions * access.therapy.sets
-              && (d.endReason != 'completed' || d.hits == access.therapy.repetitions * access.therapy.sets)
-            : d.hits + d.misses <= 10000);
+        && validResultAttempts(d, access.therapy, gameCatalog()[d.gameId].report.attempts);
     }
     match /professionals/{professional}/patients/{id} {
       allow get: if owner(professional);

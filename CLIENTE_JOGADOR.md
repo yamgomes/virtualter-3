@@ -65,7 +65,7 @@ O resultado v2 inclui ID estável, versão do jogo, cópia do plano, calibraçã
 
 `ResultOutbox` coloca o resultado numa fila local antes do envio. Em caso de falha, mantém o mesmo ID para reenvio pelo botão ou quando a conexão retorna. A fila sobrevive à recarga quando o armazenamento local está disponível. Se houver falta de espaço ou bloqueio, o resultado fica apenas na memória da aba, com aviso explícito. Conteúdo corrompido não é sobrescrito. A sincronização é serializada e seleciona apenas o jogador do plano atual.
 
-No Semáforo e no Goleiro, o controlador conta elevações de cada braço ao atingir 90% da amplitude individual medida. Depois de cada elevação, o braço precisa descer a 70% ou menos para habilitar outra contagem. A calibração inicial, a pausa e a perda de rastreamento não contam como repetições. Essa medida usa a pose da câmera e é independente do placar.
+No Semáforo, no Goleiro e na elevação convencional, a entrada de ombros conta elevações de cada braço ao atingir 90% da amplitude individual medida. Depois de cada elevação, o braço precisa descer a 70% ou menos para habilitar outra contagem. A calibração inicial, a pausa e a perda de rastreamento não contam como repetições. A atividade devolve essa medida no resultado, separada do placar.
 
 O adaptador Firebase envia o placar, as elevações por lado e os tempos agregados pelo ID da sessão. O terapeuta responsável vê esses resultados no histórico do paciente. Se o envio falhar, a fila local conserva o resultado para nova tentativa enquanto o código e a revisão da terapia estiverem ativos. As demonstrações e o Surfe salvam no navegador.
 
@@ -73,14 +73,12 @@ O repositório de demonstração faz upsert no `localStorage`. Ele preserva o hi
 
 ## Acrescentar um jogo
 
-1. Defina a variante de configuração em `session/types.ts` e sua validação.
-2. Crie ou reutilize sensores e calibração em `exercise/`.
-3. Implemente regras que recebam controles na unidade escolhida pelo jogo e possam ser testadas sem navegador.
-4. Crie sua apresentação e um `GameActivity` que componha esses elementos.
-5. Registre a fábrica em `games/registry.ts` e um plano no mock.
-6. Teste preparação, perda de rastreamento, pausa, conclusão, interrupção e descarte.
+1. Em `packages/contracts/games/`, defina o ID, os campos da prescrição, os valores iniciais, a postura e as métricas. Importe a definição na lista de `packages/contracts/game-definitions.ts`. O formulário profissional e a demonstração leem esse catálogo.
+2. Em `src/games/<jogo>/`, declare o plano com `defineGamePlan`. Implemente a conversão da prescrição e, quando necessário, a validação da configuração e da calibração, a contagem esperada de tentativas e os textos do resumo local. Registre o plano em `src/games/planRegistry.ts`. Esse módulo roda também nos testes e deve funcionar sem importar cenas ou CSS.
+3. Implemente o `GameActivity` e adicione sua fábrica a `src/games/registry.ts`. O jogo recebe poses e produz um resultado. Se quiser usar o som de acerto do jogador, devolva o total de acertos em `update()`. `result()` é chamado ao encerrar a sessão. O jogo pode ser escolhido pela demonstração, que dispensa códigos de teste.
+4. Rode `npm run rules:generate` e `npm test`. A lista aceita pelo Firestore é gerada a partir do catálogo. A definição de um jogo pode escolher um perfil existente de publicação em `report`. Sem perfil, o resultado fica no histórico local. A implantação das regras também regenera a lista.
 
-A inclusão de um jogo não exige condições específicas em `GameController`.
+Para um jogo que usa os campos e tipos de resultado existentes, os únicos pontos de registro são as três listas. O pacote compartilhado mantém os formatos de prescrição e de resultados disponíveis nos dois clientes. Um novo campo de prescrição ou tipo de métrica persistida exige estender esse contrato e suas regras de validação.
 
 ## Verificação
 

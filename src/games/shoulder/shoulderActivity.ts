@@ -1,7 +1,11 @@
-import type { GameActivity, PreparationProgress } from '../contracts';
+import type {
+  ActivityFactory,
+  GameActivity,
+  PreparationProgress,
+} from '../contracts';
 import { GAME_DEFINITIONS } from '@homephysio/contracts';
 import type { PoseFrame } from '../../tracking/types';
-import type { ShoulderConfig } from '../../session/types';
+import type { ShoulderConfig } from './shoulderPlans';
 import { ShoulderInput } from '../../exercise/shoulderInput';
 import { ShoulderSession } from './shoulderSession';
 
@@ -13,9 +17,6 @@ export class ShoulderActivity implements GameActivity {
   readonly posture;
   private config: ShoulderConfig;
   private readonly input = new ShoulderInput();
-  get shoulderMeasurementRange() {
-    return this.input.measuredRange;
-  }
   private session: ShoulderSession | null = null;
   constructor(config: ShoulderConfig) {
     this.config = config;
@@ -46,12 +47,15 @@ export class ShoulderActivity implements GameActivity {
     const range = this.input.calibration;
     if (!range) throw new Error('Calibração necessária');
     this.session = new ShoulderSession(this.config, range, stage, panel);
+    this.input.startMeasurement();
   }
   update(frame: PoseFrame | null, now: number) {
     const angles = this.input.read(frame);
+    const completed = this.session?.update(angles, now) ?? false;
     return {
       tracking: angles !== null,
-      completed: this.session?.update(angles, now) ?? false,
+      completed,
+      hits: this.session?.hits,
     };
   }
   render(now: number): void {
@@ -63,6 +67,7 @@ export class ShoulderActivity implements GameActivity {
     if (!calibration) throw new Error('Calibração necessária');
     return {
       ...this.session.result(),
+      movement: this.input.movement,
       calibration: {
         leftRest: calibration.left.rest,
         leftMaximum: calibration.left.maximum,
@@ -76,3 +81,6 @@ export class ShoulderActivity implements GameActivity {
     this.session = null;
   }
 }
+
+export const createShoulder: ActivityFactory<'shoulder'> = ({ config }) =>
+  new ShoulderActivity(config);

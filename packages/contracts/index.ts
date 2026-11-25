@@ -1,36 +1,42 @@
 import { GAME_DEFINITIONS, NUMERIC_LIMITS } from './game-definitions';
+import type { TherapySettings } from './game-definitions';
+import type { lowerBodyDefinitions } from './games/lowerBody';
 export {
   DEFAULT_GOALKEEPER_FLIGHT_MS,
   GAME_DEFINITIONS,
 } from './game-definitions';
-export type { TherapyField } from './game-definitions';
+export type {
+  GameDefinition,
+  TherapyField,
+  TherapySettings,
+} from './game-definitions';
+export { reportLines } from './report-presentation';
 export { validMovementMetrics } from './session-report';
 export type {
+  LowerBodyMetrics,
   MovementMetrics,
   ShoulderRepetitions,
   SessionReport,
 } from './session-report';
 
-export type GameId =
-  'shoulder' | 'surfing' | 'goalkeeper' | 'shoulderElevation';
-export type Metric = 'hits' | 'misses' | 'points' | 'activeMs' | 'pausedMs';
+export type LowerBodyGameId = keyof typeof lowerBodyDefinitions;
+export type GameId = keyof typeof GAME_DEFINITIONS;
+export function isGameId(value: unknown): value is GameId {
+  return typeof value === 'string' && Object.hasOwn(GAME_DEFINITIONS, value);
+}
+export type Metric =
+  | 'hits'
+  | 'misses'
+  | 'points'
+  | 'activeMs'
+  | 'pausedMs'
+  | 'kneeHeight'
+  | 'balance';
 export type Intensity = 'low' | 'moderate' | 'high' | 'custom';
-export interface Therapy {
+export interface Therapy extends TherapySettings {
   gameId: GameId;
   title: string;
-  intensity: Intensity;
   metrics: Metric[];
-  targets: string;
-  durationSeconds: number;
-  repetitions: number;
-  holdSeconds: number;
-  targetSeconds: number;
-  tolerancePercent: number;
-  postureTolerancePercent: number;
-  pointsPerHit: number;
-  side: 'left' | 'right';
-  sets: number;
-  restSeconds: number;
 }
 export interface Patient {
   id: string;
@@ -45,10 +51,28 @@ export const METRICS: { value: Metric; label: string }[] = [
   { value: 'points', label: 'Pontuação' },
   { value: 'activeMs', label: 'Tempo ativo' },
   { value: 'pausedMs', label: 'Tempo em pausa' },
+  { value: 'kneeHeight', label: 'Altura dos joelhos' },
+  { value: 'balance', label: 'Equilíbrio estimado' },
+];
+export function metricsForGame(game: GameId) {
+  const available = GAME_DEFINITIONS[game].metrics ?? commonMetrics;
+  return METRICS.filter(({ value }) => available.includes(value));
+}
+const commonMetrics: readonly Metric[] = [
+  'hits',
+  'misses',
+  'points',
+  'activeMs',
+  'pausedMs',
 ];
 export function defaultTherapy(gameId: GameId = 'shoulder'): Therapy {
-  const { label, defaults } = GAME_DEFINITIONS[gameId];
-  return { ...defaults, gameId, title: label, metrics: ['hits', 'activeMs'] };
+  const {
+    label,
+    defaults,
+    defaultMetrics = ['hits', 'activeMs'],
+  } = GAME_DEFINITIONS[gameId];
+  const metrics = [...defaultMetrics];
+  return { ...defaults, gameId, title: label, metrics };
 }
 // Intensidade é uma sugestão de parâmetros do protótipo, não uma dose clínica validada.
 export function intensityPreset(
@@ -60,12 +84,9 @@ export function intensityPreset(
 export function validTherapy(t: unknown): t is Therapy {
   if (!t || typeof t !== 'object') return false;
   const v = t as Therapy;
-  if (
-    typeof v.gameId !== 'string' ||
-    !Object.hasOwn(GAME_DEFINITIONS, v.gameId)
-  )
-    return false;
+  if (!isGameId(v.gameId)) return false;
   const definition = GAME_DEFINITIONS[v.gameId];
+  const metrics = metricsForGame(v.gameId);
   const numbersValid = (
     Object.keys(NUMERIC_LIMITS) as (keyof typeof NUMERIC_LIMITS)[]
   ).every((key) => {
@@ -81,16 +102,16 @@ export function validTherapy(t: unknown): t is Therapy {
     ['low', 'moderate', 'high', 'custom'].includes(v.intensity) &&
     Array.isArray(v.metrics) &&
     v.metrics.length > 0 &&
-    v.metrics.length <= 5 &&
+    v.metrics.length <= metrics.length &&
     new Set(v.metrics).size === v.metrics.length &&
-    v.metrics.every((m) => METRICS.some((x) => x.value === m)) &&
+    v.metrics.every((m) => metrics.some((x) => x.value === m)) &&
     typeof v.targets === 'string' &&
     v.targets.length <= 500 &&
     new RegExp(definition.storedTargetsPattern).test(v.targets) &&
     numbersValid &&
-    (v.gameId !== 'shoulderElevation' ||
+    (!definition.requiresSets ||
       (Number.isInteger(v.sets) && v.sets >= 1 && v.restSeconds >= 0)) &&
-    (v.gameId === 'shoulderElevation' || v.holdSeconds <= v.targetSeconds) &&
+    (definition.independentHold || v.holdSeconds <= v.targetSeconds) &&
     Number.isInteger(v.repetitions) &&
     Number.isInteger(v.pointsPerHit) &&
     ['left', 'right'].includes(v.side)

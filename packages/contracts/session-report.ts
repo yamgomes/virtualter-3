@@ -1,15 +1,22 @@
+import type { GameId } from './index';
+
 export interface ShoulderRepetitions {
   left: number;
   right: number;
 }
 
-export interface MovementMetrics {
-  shoulderRepetitions: ShoulderRepetitions;
+export interface LowerBodyMetrics {
+  kneeHeight: { left: number; right: number };
+  balance: number | null;
 }
+
+export type MovementMetrics =
+  | { shoulderRepetitions: ShoulderRepetitions; lowerBody?: never }
+  | { lowerBody: LowerBodyMetrics; shoulderRepetitions?: never };
 
 export interface SessionReport {
   schemaVersion: 1;
-  gameId: 'shoulder' | 'shoulderElevation' | 'goalkeeper';
+  gameId: GameId;
   title: string;
   revision: number;
   completedAtMs: number;
@@ -24,10 +31,21 @@ export interface SessionReport {
 
 export function validMovementMetrics(value: unknown): value is MovementMetrics {
   if (!value || typeof value !== 'object') return false;
-  const repetitions = (value as Partial<MovementMetrics>).shoulderRepetitions;
+  const { shoulderRepetitions, lowerBody } = value as Partial<MovementMetrics>;
+  if (lowerBody !== undefined) {
+    const percent = (n: unknown) =>
+      typeof n === 'number' && Number.isInteger(n) && n >= 0 && n <= 100;
+    return (
+      shoulderRepetitions === undefined &&
+      !!lowerBody?.kneeHeight &&
+      percent(lowerBody.kneeHeight.left) &&
+      percent(lowerBody.kneeHeight.right) &&
+      (lowerBody.balance === null || percent(lowerBody.balance))
+    );
+  }
   return (
-    !!repetitions &&
-    [repetitions.left, repetitions.right].every(
+    !!shoulderRepetitions &&
+    [shoulderRepetitions.left, shoulderRepetitions.right].every(
       (count) => Number.isSafeInteger(count) && count >= 0
     )
   );

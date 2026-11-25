@@ -5,11 +5,16 @@ import {
   normalizeLean,
   trunkLean,
 } from '../../exercise/trunkLean';
-import type { GameResult, SurfConfig } from '../../session/types';
+import type { GameResult } from '../../session/types';
 import type { PoseFrame } from '../../tracking/types';
-import type { GameActivity, PreparationProgress } from '../contracts';
+import type {
+  ActivityFactory,
+  GameActivity,
+  PreparationProgress,
+} from '../contracts';
 import './style.css';
 import { SurfGame } from './surfGame';
+import type { SurfConfig } from './surfPlan';
 import { SurfScene } from './surfScene';
 
 export class SurfActivity implements GameActivity {
@@ -86,6 +91,7 @@ export class SurfActivity implements GameActivity {
     return {
       tracking: this.tracking,
       completed: events.some((e) => e.type === 'completed'),
+      hits: this.game.hits,
     };
   }
   private refresh(): void {
@@ -128,3 +134,6 @@ export class SurfActivity implements GameActivity {
     this.panel = null;
   }
 }
+
+export const createSurfing: ActivityFactory<'surfing'> = ({ config }) =>
+  new SurfActivity(config);
