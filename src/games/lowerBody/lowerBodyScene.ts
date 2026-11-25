@@ -39,7 +39,7 @@ export class LowerBodyScene {
     this.stage = stage;
     this.mode = mode;
     const walking = this.mode === 'walking';
-    this.scene.background = new THREE.Color(walking ? 0xc3dfdb : 0x18363c);
+    this.scene.background = new THREE.Color(walking ? 0xc3dfdb : 0x9fc37a);
     this.scene.fog = new THREE.Fog(this.scene.background, 9, 27);
     this.scene.add(new THREE.HemisphereLight(0xf1fbff, 0x50655a, 2.4));
     const light = new THREE.DirectionalLight(0xffebc7, 2);
@@ -61,7 +61,7 @@ export class LowerBodyScene {
 
     const floor = mesh(
       new THREE.PlaneGeometry(80, 80),
-      walking ? 0x749682 : 0x2a4f50
+      walking ? 0x749682 : 0x68974a
     );
     floor.rotation.x = -Math.PI / 2;
     this.scene.add(floor);
@@ -88,6 +88,7 @@ export class LowerBodyScene {
     } else {
       this.camera.position.set(0, 1.22, 3.6);
       this.camera.lookAt(0, 1.12, 0);
+      this.addFieldBackdrop(floor.material);
       this.ball.add(
         mesh(new THREE.SphereGeometry(BALL_RADIUS, 24, 16), 0xfdf3d7)
       );
@@ -96,6 +97,10 @@ export class LowerBodyScene {
     }
     const canvas = this.renderer.domElement;
     canvas.className = 'lower-body-canvas';
+    canvas.classList.toggle(
+      'lower-body-canvas--mirrored',
+      mode === 'kneeJuggle'
+    );
     canvas.setAttribute(
       'aria-label',
       walking ? 'Personagem na faixa central' : 'Bola e marca de contato'
@@ -105,6 +110,79 @@ export class LowerBodyScene {
     this.observer = new ResizeObserver(() => this.resize());
     this.observer.observe(this.stage);
     this.resize();
+  }
+
+  private addFieldBackdrop(ground: THREE.MeshStandardMaterial): void {
+    const dome = new THREE.SphereGeometry(52, 24, 24);
+    const vertices = dome.getAttribute('position');
+    const horizon = new THREE.Color(0xbadff6);
+    const blue = new THREE.Color(0x438fdc);
+    const tint = new THREE.Color();
+    const colors: number[] = [];
+    for (let i = 0; i < vertices.count; i++) {
+      const height = THREE.MathUtils.smoothstep(vertices.getY(i), 0, 18);
+      tint.copy(horizon).lerp(blue, height);
+      colors.push(tint.r, tint.g, tint.b);
+    }
+    dome.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+    const sky = new THREE.Mesh(
+      dome,
+      new THREE.MeshBasicMaterial({
+        side: THREE.BackSide,
+        vertexColors: true,
+        fog: false,
+      })
+    );
+    this.scene.add(sky);
+
+    const cloudShape = new THREE.SphereGeometry(1, 16, 12);
+    const cloudMaterial = new THREE.MeshBasicMaterial({
+      color: 0xf3f8fc,
+      fog: false,
+    });
+    const clouds = [
+      [-6, 5.6, -21, 1],
+      [6, 4.4, -25, 0.8],
+    ];
+    const puffs = [
+      [-1.2, 0, 1.2, 0.35],
+      [0, 0.3, 1.8, 0.6],
+      [1.35, 0, 1.2, 0.4],
+    ];
+    for (const [x, y, z, size] of clouds) {
+      const cloud = new THREE.Group();
+      cloud.position.set(x, y, z);
+      cloud.scale.setScalar(size);
+      for (const [offset, height, width, radius] of puffs) {
+        const puff = new THREE.Mesh(cloudShape, cloudMaterial);
+        puff.position.set(offset, height, 0);
+        puff.scale.set(width, radius, 0.65);
+        cloud.add(puff);
+      }
+      this.scene.add(cloud);
+    }
+
+    const tile = document.createElement('canvas');
+    tile.width = tile.height = 128;
+    const context = tile.getContext('2d');
+    if (!context) return;
+    context.fillStyle = '#eee';
+    context.fillRect(0, 0, 128, 128);
+    for (let i = 0; i < 1800; i++) {
+      context.fillStyle = i % 2 ? '#fff' : '#aaa';
+      const x = Math.random() * tile.width;
+      const y = Math.random() * tile.height;
+      context.fillRect(x, y, 1, 2);
+    }
+    const grass = new THREE.CanvasTexture(tile);
+    grass.colorSpace = THREE.SRGBColorSpace;
+    grass.wrapS = grass.wrapT = THREE.RepeatWrapping;
+    grass.repeat.set(32, 32);
+    grass.anisotropy = Math.min(
+      4,
+      this.renderer.capabilities.getMaxAnisotropy()
+    );
+    ground.map = grass;
   }
 
   private createLimbs(side: Leg) {
