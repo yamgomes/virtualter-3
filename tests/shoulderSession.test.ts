@@ -28,7 +28,7 @@ class FakeElement {
   addEventListener(_type: string, callback: () => void): void {
     this.clicked = callback;
   }
-  after(_item: FakeElement): void {}
+  append(_item: FakeElement): void {}
   remove(): void {
     this.removed = true;
   }

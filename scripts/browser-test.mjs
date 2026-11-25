@@ -63,7 +63,8 @@ try {
           if (!m.valid) return null;
           const angle = m.angle * Math.PI / 180, points = {};
           for (const side of ['left', 'right']) {
-            const x = side === 'left' ? 0.65 : 0.35, sign = side === 'left' ? 1 : -1;
+            const sign = side === 'left' ? 1 : -1;
+            const x = 0.5 + sign * (m.mode === 'surfing' ? 0.02 : 0.15);
             points[side + 'Hip'] = { x, y: 0.7, visibility: 1 };
             points[side + 'Shoulder'] = { x: x + (m.mode === 'surfing' ? Math.sin(angle) * 0.3 : 0), y: m.mode === 'surfing' ? 0.7 - Math.cos(angle) * 0.3 : 0.4, visibility: 1 };
             points[side + 'Elbow'] = { x: x + sign * Math.sin(angle) * 0.2, y: 0.4 + Math.cos(angle) * 0.2, visibility: 1 };
@@ -98,13 +99,41 @@ try {
         document.querySelector('#calibration-title').textContent
       )
     );
+    const preview = page.locator('#camera-preview');
+    const previewBox = await preview.boundingBox();
+    assert.ok(previewBox && Math.abs(previewBox.width / previewBox.height - 4 / 3) < 0.01);
     await page.evaluate((angle) => {
       window.__movement.angle = angle;
     }, max);
     await page.locator('#pause').waitFor({ state: 'visible' });
-    assert.equal(await page.locator('#camera-preview canvas').count(), 2);
+    const stage = page.locator('#game-stage');
+    const canvas = stage.locator('canvas');
+    assert.equal(await canvas.count(), 1);
+    assert.equal(await preview.isVisible(), false);
+    const checkStage = async (aspect) => {
+      const box = await stage.boundingBox();
+      assert.ok(box && box.width > 0 && box.height > 0);
+      assert.ok(Math.abs(box.width / box.height - aspect) < 0.01);
+      assert.ok(box.y + box.height <= page.viewportSize().height);
+      await page.waitForFunction(() => {
+        const canvas = document.querySelector('#game-stage canvas');
+        return (
+          canvas &&
+          Math.abs(canvas.width / canvas.height - canvas.clientWidth / canvas.clientHeight) < 0.02
+        );
+      });
+    };
+    await checkStage(viewport.width < viewport.height ? 9 / 16 : 16 / 9);
+    const pause = await page.locator('#pause').boundingBox();
+    assert.ok(pause && pause.y + pause.height <= viewport.height);
     await page.locator('#pause').click();
     await page.locator('#resume').waitFor({ state: 'visible' });
+    if (mode === 'surfing') {
+      await page.setViewportSize({ width: viewport.height, height: viewport.width });
+      await checkStage(16 / 9);
+      await page.setViewportSize(viewport);
+      await checkStage(9 / 16);
+    }
     await page.evaluate(() => {
       window.__movement.angle *= 0.5;
     });
@@ -113,6 +142,7 @@ try {
       fullPage: true,
     });
     await page.locator('#resume').click();
+    await page.locator('.session-view .resume-countdown').waitFor({ state: 'visible' });
     await page.waitForFunction(
       (mode) =>
         mode === 'shoulder'
@@ -144,6 +174,7 @@ try {
     assert.equal(results[0].plan.gameId, mode);
     await page.locator('#restart').click();
     assert.equal(await page.locator('#camera-preview canvas').count(), 1);
+    assert.equal(await canvas.count(), 0);
     await page.evaluate(() => window.__controller.dispose());
     await page.close();
     console.log(

@@ -20,7 +20,6 @@ export class SurfScene {
     if (!context) throw new Error('Canvas indisponível');
     this.context = context;
     container.append(this.canvas);
-    container.classList.add('surf-stage');
   }
   render(state: SurfVisualState, now: number): void {
     const w = Math.max(1, this.container.clientWidth),
@@ -68,7 +67,7 @@ export class SurfScene {
     }
     const x = track(state.position),
       y = h * 0.61 + Math.sin(now / 900) * h * 0.012;
-    const s = Math.min(w, h) / 400;
+    const s = Math.min(w / 360, h / 400);
     c.save();
     c.translate(x, y);
     c.scale(s, s);
@@ -112,6 +111,5 @@ export class SurfScene {
   }
   dispose(): void {
     this.canvas.remove();
-    this.container.classList.remove('surf-stage');
   }
 }

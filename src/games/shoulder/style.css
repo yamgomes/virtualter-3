@@ -1,19 +1,6 @@
 .shoulder-game-stage {
   background: radial-gradient(circle at 50% 42%, #344969, #101a30 75%);
 }
-.shoulder-game-stage video {
-  opacity: 0.18;
-  filter: saturate(0.7);
-}
-.shoulder-game-stage canvas.shoulder-game-canvas {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  opacity: 1;
-  z-index: 1;
-  pointer-events: none;
-}
 .shoulder-game-ui .stats {
   display: flex;
   gap: 18px;
@@ -56,6 +43,9 @@
   accent-color: #ff809b;
 }
 .shoulder-game-legend {
+  position: absolute;
+  inset: auto 0 0;
+  padding: 8px;
   width: 100%;
   display: flex;
   align-items: center;
@@ -88,9 +78,17 @@
   font-weight: 500;
   letter-spacing: 0;
 }
-@media (max-width: 800px) {
+@media (max-width: 800px), (max-height: 500px) and (orientation: landscape) {
   .shoulder-game-ui .stats {
-    gap: 25px;
+    padding: 5px 0;
+    margin: 5px 0;
+  }
+  .shoulder-game-ui .stats strong {
+    font-size: 1.2rem;
+  }
+  .shoulder-game-ui .target-marker {
+    top: 0;
+    height: 16px;
   }
   .shoulder-game-legend small {
     width: 100%;

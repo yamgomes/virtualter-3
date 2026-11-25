@@ -15,6 +15,8 @@ export interface GameActivity {
   readonly planDescription: string;
   /** Declarada pelo jogo; omitir quando não houver orientação obrigatória. */
   readonly posture?: PostureRequirement;
+  /** A atividade usa o vídeo como representação principal durante a partida. */
+  readonly usesCameraPreview?: boolean;
   calibrate(frame: PoseFrame | null, now: number): PreparationProgress;
   resetCalibration(): void;
   start(stage: HTMLElement, panel: HTMLElement): void;

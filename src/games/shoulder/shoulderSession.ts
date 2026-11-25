@@ -41,10 +41,10 @@ export class ShoulderSession {
       <div class="arm-target"><div class="progress-label"><span>🔴 Direito · alvo <strong data-field="target-right"></strong></span><strong data-field="angle-right">—</strong></div><div class="target-track"><progress data-field="progress-right" max="180" value="0" aria-label="Ângulo do braço direito em graus"></progress><span data-field="marker-right" class="target-marker" aria-hidden="true"></span></div></div>
       <p class="tracking" data-field="feedback" aria-live="polite">Ajuste os dois braços até os alvos.</p>`;
     this.legend = document.createElement('div');
-    this.legend.className = 'stage-legend shoulder-game-legend';
+    this.legend.className = 'shoulder-game-legend';
     this.legend.innerHTML =
       '<span><i class="legend-blue"></i> ESQUERDO</span><span><i class="legend-pink"></i> DIREITO</span><small>Leve as mãos do personagem até os círculos</small>';
-    stage.after(this.legend);
+    stage.append(this.legend);
     stage.classList.add('shoulder-game-stage');
     this.refresh();
   }

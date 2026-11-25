@@ -1,16 +1,3 @@
-.lower-body-stage video,
-.lower-body-stage .camera-label {
-  visibility: hidden;
-}
-
-.video-wrap canvas.lower-body-canvas {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 1;
-}
-
 #game-ui [data-leg$='-value'] {
   float: right;
   font-variant-numeric: tabular-nums;

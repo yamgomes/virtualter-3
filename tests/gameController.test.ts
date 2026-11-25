@@ -20,7 +20,7 @@ class ElementStub {
   srcObject: unknown = null;
   videoWidth = 640;
   videoHeight = 480;
-  style: Record<string, string> = {};
+  style = { setProperty() {} };
   dataset: Record<string, string> = {};
   disabled = false;
   files: { size: number; text(): Promise<string> }[] = [];

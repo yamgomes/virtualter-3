@@ -114,6 +114,7 @@ export class GameController {
   }
   private bind(): void {
     const options = { signal: this.events.signal };
+    this.video.addEventListener('resize', () => this.updateCameraAspect(), options);
     this.el<HTMLFormElement>('code-form').addEventListener(
       'submit',
       (event) => {
@@ -401,11 +402,7 @@ export class GameController {
         'Não foi possível carregar o detector de movimento. Confira a conexão e tente novamente.';
       await this.detector.initialize();
       if (generation !== this.cameraGeneration || this.disposed) return;
-      const preview = this.el('camera-preview');
-      const width = this.video.videoWidth || 4;
-      const height = this.video.videoHeight || 3;
-      preview.style.aspectRatio = `${width} / ${height}`;
-      preview.style.maxWidth = `calc(var(--stage-height, 100vmax) * ${width / height})`;
+      this.updateCameraAspect();
       for (const track of acquired.getVideoTracks())
         track.addEventListener(
           'ended',
@@ -582,7 +579,7 @@ export class GameController {
   private startGame(): void {
     if (!this.plan || !this.activity) return;
     try {
-      this.activity.start(this.el('camera-preview'), this.el('game-ui'));
+      this.activity.start(this.el('game-stage'), this.el('game-ui'));
       this.sessionId = crypto.randomUUID();
       this.lastHits = 0;
       this.clock = new SessionClock(performance.now());
@@ -880,17 +877,23 @@ export class GameController {
       /* O jogo continua caso o navegador bloqueie o áudio. */
     }
   }
+  private updateCameraAspect(): void {
+    const { videoWidth, videoHeight } = this.video;
+    if (videoWidth && videoHeight)
+      this.el('camera-preview').style.setProperty(
+        '--camera-ratio',
+        String(videoWidth / videoHeight)
+      );
+  }
   private update(): void {
+    const inGame = ['playing', 'paused', 'resuming'].includes(this.phase);
+    const showScene = inGame && !this.activity?.usesCameraPreview;
+    document.body.classList.toggle('session-playing', inGame);
+    this.el('game-stage').hidden = !showScene;
+    this.el('camera-preview').hidden = showScene;
     document.body.classList.toggle(
       'camera-active',
-      [
-        'opening',
-        'camera',
-        'calibrating',
-        'playing',
-        'paused',
-        'resuming',
-      ].includes(this.phase)
+      inGame || ['opening', 'camera', 'calibrating'].includes(this.phase)
     );
     document
       .querySelectorAll<HTMLElement>('[data-phase]')
@@ -905,7 +908,7 @@ export class GameController {
       ? 'Mantenha a posição correta por 3 segundos. A contagem para retomar começará automaticamente.'
       : 'Sessão pausada. Confira seu enquadramento antes de retomar.';
     const resume = this.el<HTMLButtonElement>('resume');
-    resume.hidden = autoResume;
+    resume.hidden = this.phase !== 'paused' || autoResume;
     resume.disabled = autoResume;
     this.el<HTMLButtonElement>('access-plan').disabled =
       this.phase === 'loading';

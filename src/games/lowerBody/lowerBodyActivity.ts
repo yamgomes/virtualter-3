@@ -41,6 +41,7 @@ const framingHelp: Record<LegPoseIssue, string> = {
 };
 
 export class LowerBodyActivity implements GameActivity {
+  readonly usesCameraPreview: boolean;
   readonly version = '1.0.0';
   readonly posture;
   readonly instructions =
@@ -53,6 +54,7 @@ export class LowerBodyActivity implements GameActivity {
   private scene: LowerBodyScene | null = null;
 
   constructor(mode: LowerBodyGameId, config: LowerBodyConfig) {
+    this.usesCameraPreview = mode === 'kneeRaise';
     const { posture, defaults } = GAME_DEFINITIONS[mode];
     this.posture = {
       mode: posture,

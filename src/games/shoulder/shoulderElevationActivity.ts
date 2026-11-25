@@ -13,6 +13,7 @@ type Stage = 'raise' | 'hold' | 'lower' | 'rest' | 'done';
 
 /** Exercício bilateral simples: eleva, mantém, retorna e descansa entre séries. */
 export class ShoulderElevationActivity implements GameActivity {
+  readonly usesCameraPreview = true;
   readonly version = '1.0.0';
   readonly instructions =
     'Fique de frente para a câmera. Enquadre os dois ombros, cotovelos e quadris. Eleve os dois braços ao mesmo tempo até a altura confortável e depois retorne à posição de repouso.';

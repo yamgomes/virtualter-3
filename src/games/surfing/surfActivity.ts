@@ -12,7 +12,6 @@ import type {
   GameActivity,
   PreparationProgress,
 } from '../contracts';
-import './style.css';
 import { SurfGame } from './surfGame';
 import type { SurfConfig } from './surfPlan';
 import { SurfScene } from './surfScene';

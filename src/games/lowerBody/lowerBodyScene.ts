@@ -102,7 +102,6 @@ export class LowerBodyScene {
     );
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     this.stage.append(canvas);
-    this.stage.classList.add('lower-body-stage');
     this.observer = new ResizeObserver(() => this.resize());
     this.observer.observe(this.stage);
     this.resize();
@@ -161,7 +160,15 @@ export class LowerBodyScene {
     const width = Math.max(1, this.stage.clientWidth);
     const height = Math.max(1, this.stage.clientHeight);
     this.camera.aspect = width / height;
-    this.camera.fov = this.mode === 'walking' ? 38 : 39;
+    const verticalFov = this.mode === 'walking' ? 38 : 39;
+    const horizontalHalfFov = THREE.MathUtils.degToRad(15);
+    const verticalHalfFovForWidth = Math.atan(
+      Math.tan(horizontalHalfFov) / this.camera.aspect
+    );
+    this.camera.fov = Math.max(
+      verticalFov,
+      THREE.MathUtils.radToDeg(2 * verticalHalfFovForWidth)
+    );
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(width, height, false);
   }
@@ -222,6 +229,5 @@ export class LowerBodyScene {
     dispose(this.scene);
     this.renderer.dispose();
     this.renderer.domElement.remove();
-    this.stage.classList.remove('lower-body-stage');
   }
 }

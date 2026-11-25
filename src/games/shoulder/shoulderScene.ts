@@ -101,14 +101,6 @@ export class ShoulderScene {
     this.avatar.add(mesh);
   }
   update(state: ShoulderSceneState): void {
-    const aspect =
-      this.container.clientWidth / Math.max(1, this.container.clientHeight);
-    const height = Math.max(1.3, 1.3 / aspect);
-    this.camera.left = (-aspect * height) / 2;
-    this.camera.right = (aspect * height) / 2;
-    this.camera.top = height / 2;
-    this.camera.bottom = -height / 2;
-    this.camera.updateProjectionMatrix();
     for (const side of ['left', 'right'] as const) {
       const arm = this.arms.get(side)!,
         current = avatarArm(side, state.angles[side]);
@@ -127,11 +119,16 @@ export class ShoulderScene {
     this.renderer.render(this.scene, this.camera);
   }
   private resize(): void {
-    this.renderer.setSize(
-      this.container.clientWidth || 1,
-      this.container.clientHeight || 1,
-      false
-    );
+    const width = this.container.clientWidth || 1;
+    const height = this.container.clientHeight || 1;
+    const aspect = width / height;
+    const viewHeight = Math.max(1.3, 1.3 / aspect);
+    this.camera.left = (-aspect * viewHeight) / 2;
+    this.camera.right = (aspect * viewHeight) / 2;
+    this.camera.top = viewHeight / 2;
+    this.camera.bottom = -viewHeight / 2;
+    this.camera.updateProjectionMatrix();
+    this.renderer.setSize(width, height, false);
     this.renderer.render(this.scene, this.camera);
   }
   dispose(): void {
