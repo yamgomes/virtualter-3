@@ -7,6 +7,8 @@ import type { AttemptResult } from '../../session/types';
 import type { GoalkeeperConfig } from './goalkeeperPlan';
 import type { Intensity } from '@homephysio/contracts';
 
+const MIN_SAME_SIDE_ELEVATION_GAP = 0.4;
+
 export interface Shot {
   side: Side;
   degrees: number;
@@ -28,6 +30,11 @@ export class GoalkeeperGame {
   private elapsed = 0;
   private nextLaunchAt = 550;
   private launched = 0;
+  private lastLaunch: {
+    side: Side;
+    elevation: number;
+    repeated: boolean;
+  } | null = null;
   private lastUpdate: number | null = null;
 
   constructor(
@@ -94,16 +101,38 @@ export class GoalkeeperGame {
       this.elapsed >= this.nextLaunchAt &&
       this.inFlight.length < this.maxInFlight
     ) {
-      const side = Math.random() < 0.5 ? 'left' : 'right';
-      const { rest, maximum } = this.range[side];
-      this.inFlight.push({
-        side,
-        degrees: rest + (maximum - rest) * Math.random(),
-        launchedAt: this.elapsed,
-      });
+      this.launchShot();
       this.nextLaunchAt = this.elapsed + this.launchInterval;
       this.launched++;
     }
     return outcome;
   }
+
+  private launchShot(): void {
+    const previous = this.lastLaunch;
+    const pickLeft = previous?.repeated
+      ? previous.side === 'right'
+      : Math.random() < 0.5;
+    const side = pickLeft ? 'left' : 'right';
+    const repeated = previous?.side === side;
+    const elevation = repeated
+      ? separatedElevation(previous.elevation)
+      : Math.random();
+    const { rest, maximum } = this.range[side];
+    this.inFlight.push({
+      side,
+      degrees: rest + (maximum - rest) * elevation,
+      launchedAt: this.elapsed,
+    });
+    this.lastLaunch = { side, elevation, repeated };
+  }
+}
+
+function separatedElevation(previous: number): number {
+  const lowerLength = Math.max(0, previous - MIN_SAME_SIDE_ELEVATION_GAP);
+  const upperStart = previous + MIN_SAME_SIDE_ELEVATION_GAP;
+  const upperLength = Math.max(0, 1 - upperStart);
+  const sample = Math.random() * (lowerLength + upperLength);
+  if (upperLength === 0 || sample < lowerLength) return sample;
+  return upperStart + (sample - lowerLength);
 }

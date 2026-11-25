@@ -7,6 +7,39 @@ const range = {
   right: { rest: 10, maximum: 70 },
 };
 
+test('goleiro alterna após dois chutes e separa elevações no mesmo lado', (t) => {
+  const randomValues = [0.1, 0.65, 0.1, 0.5, 0.5, 0.9, 0.75, 0.4];
+  t.mock.method(Math, 'random', () => {
+    const value = randomValues.shift();
+    assert.ok(value !== undefined);
+    return value;
+  });
+  const asymmetricRange = { ...range, right: { rest: 25, maximum: 125 } };
+  const game = new GoalkeeperGame(
+    { repetitions: 5, timeLimitMs: 1000, tolerance: 0.1 },
+    asymmetricRange,
+    'high'
+  );
+  const launches = [];
+  for (let now = 0; now <= 4000 && !game.completed; now += 50) {
+    game.update({ left: 0, right: 0 }, now);
+    for (const shot of game.shots) {
+      if (shot.progress !== 0) continue;
+      const { rest, maximum } = asymmetricRange[shot.side];
+      const percent = (100 * (shot.degrees - rest)) / (maximum - rest);
+      launches.push([shot.side, Number(percent.toFixed(3))]);
+    }
+  }
+  assert.deepEqual(launches, [
+    ['left', 65],
+    ['left', 12.5],
+    ['right', 50],
+    ['right', 95],
+    ['left', 40],
+  ]);
+  assert.equal(game.completed, true);
+});
+
 for (const [intensity, flightMs, launchOffsets, maxInFlight] of [
   ['low', 1000, [0, 2000, 4000], 1],
   ['moderate', 1000, [0, 1000, 2000], 1],
